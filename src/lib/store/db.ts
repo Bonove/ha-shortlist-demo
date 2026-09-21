@@ -73,6 +73,16 @@ export function readDoc<T>(fn: (doc: HarnessDoc) => T): Promise<T> {
   return queue(async () => fn(await load()));
 }
 
+/** The session alone, which is all most callers want. */
+export const readSession = (): Promise<SessionState> => readDoc((doc) => doc.session);
+
+/** Mutate the session in place under the mutex, and get it back. */
+export const updateSession = (mutate: (session: SessionState) => void): Promise<SessionState> =>
+  transact((doc) => {
+    mutate(doc.session);
+    return doc.session;
+  });
+
 /** Throws away all harness state and re-seeds. */
 export function resetDoc(): Promise<SessionState> {
   return transact((doc) => {

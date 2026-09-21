@@ -87,11 +87,22 @@ function Mark({ passed }: { passed: boolean | null }) {
   );
 }
 
-export function Figure({ label, value, headline }: { label: string; value: string | null; headline?: boolean }) {
+export function Figure({
+  label,
+  value,
+  headline,
+  missingLabel = 'not stated',
+}: {
+  label: string;
+  value: string | null;
+  headline?: boolean;
+  /** Distinguishes "the advertiser never said" from "we have not run the policy". */
+  missingLabel?: string;
+}) {
   return (
     <div className={headline ? 'headline' : undefined}>
       <span className="k">{label}</span>
-      <span className="v" data-missing={value === null}>{value ?? 'not stated'}</span>
+      <span className="v" data-missing={value === null}>{value ?? missingLabel}</span>
     </div>
   );
 }
@@ -120,6 +131,7 @@ export function ListingCard({
   const meta = STATUS_META[fit];
   const stale = stalenessReasons(assessment, listing, session, status);
   const deposit = listing.requestedDepositMonths;
+  const pending = assessment ? 'not stated' : 'not evaluated yet';
 
   async function apply() {
     setBusy(true);
@@ -179,6 +191,8 @@ export function ListingCard({
               {listing.availableForRequestedDates ? '' : ' · not available for the requested dates'}
             </p>
           </div>
+        </div>
+        <div className="row wrap">
           <span className={`pill ${meta.pill}`}>{meta.label}</span>
         </div>
 
@@ -196,13 +210,26 @@ export function ListingCard({
           <Figure label="Monthly rent" value={money(listing.monthlyRent)} />
           <Figure
             label="Requested deposit"
-            value={deposit == null ? null : `${months(deposit)} · ${money(assessment?.costs.effectiveDeposit ?? null) ?? 'not stated'}`}
+            value={
+              deposit == null
+                ? null
+                : `${months(deposit)}${
+                    assessment?.costs.effectiveDeposit != null ? ` · ${money(assessment.costs.effectiveDeposit)}` : ''
+                  }`
+            }
+            missingLabel="not stated by the advertiser"
           />
-          <Figure label="Booking fee" value={money(assessment?.costs.bookingFee ?? null)} />
-          <Figure label="Initial payment" value={money(assessment?.costs.initialPayment ?? null)} headline />
+          <Figure label="Booking fee" value={money(assessment?.costs.bookingFee ?? null)} missingLabel={pending} />
+          <Figure
+            label="Initial payment"
+            value={money(assessment?.costs.initialPayment ?? null)}
+            missingLabel={pending}
+            headline
+          />
           <Figure
             label="Minimum stay applied"
             value={months(assessment?.costs.effectiveMinimumStayMonths ?? null)}
+            missingLabel={pending}
           />
           <Figure label="Travel to university" value={`${listing.travelMinutesToUniversity} min`} />
         </div>

@@ -31,15 +31,10 @@ export function refreezeScenario(): Promise<ScenarioSnapshot> {
  */
 export async function compareSnapshots(): Promise<SnapshotEvaluation[]> {
   const scenario = await getComparisonScenario();
-  const snapshots = await listSnapshots();
-  return Promise.all(
-    snapshots.map(async (snapshot) => ({
-      snapshotId: snapshot.id,
-      sourceHash: snapshot.sourceHash,
-      inputsHash: scenario.inputsHash,
-      assessments: await Promise.all(
-        scenario.listings.map((l) => assess(scenario.tenant, l, snapshot)),
-      ),
-    })),
-  );
+  return listSnapshots().map((snapshot) => ({
+    snapshotId: snapshot.id,
+    sourceHash: snapshot.sourceHash,
+    inputsHash: scenario.inputsHash,
+    assessments: scenario.listings.map((l) => assess(scenario.tenant, l, snapshot)),
+  }));
 }

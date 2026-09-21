@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 const frame = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 
 export async function POST(request: Request) {
-  let message = '';
+  let message: string | undefined;
   try {
     ({ message } = (await request.json()) as { message?: string });
   } catch {

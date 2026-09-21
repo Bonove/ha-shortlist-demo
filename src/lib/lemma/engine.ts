@@ -12,14 +12,16 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { Engine, initSync, type EngineError, type Response, type RuleResult } from '@lemmabase/lemma-engine';
 import type { PolicySourceFile, ValidationDiagnostic, ValidationResult } from '@/lib/contracts';
 import { hashBundle } from '@/lib/policy/hash';
 
-const require_ = createRequire(import.meta.url);
-const ENGINE_DIR = dirname(require_.resolve('@lemmabase/lemma-engine'));
+// Resolved from the working directory rather than require.resolve(), because
+// the bundler rewrites a static resolve of an ESM-only package and breaks it.
+// ponytail: assumes a flat node_modules at the project root; if the install is
+// ever hoisted elsewhere, resolve the path at build time instead.
+const ENGINE_DIR = join(process.cwd(), 'node_modules', '@lemmabase', 'lemma-engine');
 
 /** How many distinct bundles stay resident. Enough for S0–S3 plus drafts. */
 const CACHE_LIMIT = 8;
@@ -41,12 +43,11 @@ function shared(): LemmaGlobal {
 
 /** Thrown when a bundle will not load or will not run. Carries renderable detail. */
 export class LemmaEngineError extends Error {
-  constructor(
-    message: string,
-    readonly diagnostics: ValidationDiagnostic[],
-  ) {
+  readonly diagnostics: ValidationDiagnostic[];
+  constructor(message: string, diagnostics: ValidationDiagnostic[]) {
     super(message);
     this.name = 'LemmaEngineError';
+    this.diagnostics = diagnostics;
   }
 }
 

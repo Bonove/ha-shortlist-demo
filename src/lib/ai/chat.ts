@@ -1,12 +1,12 @@
 /**
- * The bounded tool loop behind /api/chat.
+ * The bounded tool loop behind /api/chat, on the OpenAI Responses API.
  *
  * Bounds exist because a demo that hangs is worse than a demo that says why it
  * stopped: at most MAX_TOOL_ROUNDS round trips, a whole-turn deadline and a
  * per-tool deadline, each surfaced to the user in plain words.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { randomUUID } from 'node:crypto';
 import type { ChatMessage, SnapshotId } from '@/lib/contracts';
 import { readSession, updateSession } from '@/lib/store/db';
@@ -14,16 +14,22 @@ import { getActiveSnapshot } from '@/lib/policy/snapshots';
 import { recordEvent } from '@/lib/harness/events';
 import { TOOL_DEFINITIONS, runTool } from './tools';
 
-export const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
-export const isConfigured = () => Boolean(process.env.ANTHROPIC_API_KEY);
+export const MODEL = process.env.OPENAI_MODEL || 'gpt-5.6';
+export const isConfigured = () => Boolean(process.env.OPENAI_API_KEY);
 
 const MAX_TOOL_ROUNDS = 6;
 const TURN_TIMEOUT_MS = 60_000;
 const TOOL_TIMEOUT_MS = 10_000;
 
-/** Surfaced by /api/chat/status. Never contains the key. */
-let lastError: string | null = null;
-export const getLastError = () => lastError;
+/**
+ * Surfaced by /api/chat/status. On globalThis because Next bundles each route
+ * handler separately in dev, so a module-level value would not be shared.
+ */
+const errorSlot = globalThis as typeof globalThis & { __haChatLastError?: string | null };
+export const getLastError = () => errorSlot.__haChatLastError ?? null;
+
+/** Upstream auth errors quote the key back at you; it never leaves this file. */
+const redactKeys = (message: string) => message.replace(/sk-[A-Za-z0-9_*-]+/g, '[redacted]');
 
 export type ChatEvent =
   | { type: 'text'; delta: string }
@@ -74,16 +80,16 @@ async function withTimeout<T>(work: Promise<T>, ms: number, what: string): Promi
 export async function runChatTurn(userText: string, emit: (event: ChatEvent) => void): Promise<ChatMessage> {
   if (!isConfigured()) {
     throw new Error(
-      'ANTHROPIC_API_KEY is not set on the server, so the live assistant cannot run. Rules Studio and policy evaluation are unaffected.',
+      'OPENAI_API_KEY is not set on the server, so the live assistant cannot run. Rules Studio and policy evaluation are unaffected.',
     );
   }
 
   const [session, snapshot] = await Promise.all([readSession(), getActiveSnapshot()]);
-  const client = new Anthropic();
+  const client = new OpenAI();
   const controller = new AbortController();
   const deadline = setTimeout(() => controller.abort(), TURN_TIMEOUT_MS);
 
-  const conversation: Anthropic.MessageParam[] = [
+  const input: OpenAI.Responses.ResponseInput = [
     // Prior turns carry text only; live state is re-injected below each turn.
     ...session.messages.map((m) => ({ role: m.role, content: m.content })),
     {
@@ -109,27 +115,38 @@ export async function runChatTurn(userText: string, emit: (event: ChatEvent) => 
 
   try {
     for (;;) {
-      const stream = client.messages.stream(
+      const stream = await client.responses.create(
         {
           model: MODEL,
-          max_tokens: 4096,
-          system: SYSTEM,
+          instructions: SYSTEM,
           tools: TOOL_DEFINITIONS,
-          messages: conversation,
+          input,
+          // Nothing about this demo needs to live on OpenAI's servers.
+          store: false,
+          stream: true,
         },
         { signal: controller.signal },
       );
-      stream.on('text', (delta) => emit({ type: 'text', delta }));
-      const reply = await stream.finalMessage();
 
-      answer = reply.content
-        .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-        .map((b) => b.text)
-        .join('')
-        .trim();
+      const calls: OpenAI.Responses.ResponseFunctionToolCall[] = [];
+      answer = '';
+      for await (const event of stream) {
+        if (event.type === 'response.output_text.delta') {
+          answer += event.delta;
+          emit({ type: 'text', delta: event.delta });
+        } else if (event.type === 'response.output_item.done') {
+          // Replaying every output item keeps reasoning items intact with store: false.
+          input.push(event.item as OpenAI.Responses.ResponseInputItem);
+          if (event.item.type === 'function_call') calls.push(event.item);
+        } else if (event.type === 'response.failed' || event.type === 'error') {
+          throw new Error(
+            ('message' in event ? event.message : event.response?.error?.message) || 'The model reported a failure.',
+          );
+        }
+      }
+      answer = answer.trim();
 
-      const uses = reply.content.filter((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use');
-      if (!uses.length) break;
+      if (!calls.length) break;
 
       if (rounds >= MAX_TOOL_ROUNDS) {
         const note = `I stopped after ${MAX_TOOL_ROUNDS} tool calls in one turn without reaching an answer. Please ask again, more narrowly.`;
@@ -139,49 +156,41 @@ export async function runChatTurn(userText: string, emit: (event: ChatEvent) => 
       }
       rounds += 1;
 
-      conversation.push({ role: 'assistant', content: reply.content });
-      const results: Anthropic.ToolResultBlockParam[] = [];
-
-      for (const use of uses) {
+      for (const call of calls) {
+        let parsed: unknown = {};
         let output: unknown;
-        let failed = false;
         try {
-          output = await withTimeout(runTool(use.name, use.input), TOOL_TIMEOUT_MS, `Tool ${use.name}`);
+          parsed = JSON.parse(call.arguments || '{}');
+          output = await withTimeout(runTool(call.name, parsed), TOOL_TIMEOUT_MS, `Tool ${call.name}`);
         } catch (err) {
-          failed = true;
           output = { error: err instanceof Error ? err.message : String(err) };
         }
-        const isError = failed || (typeof output === 'object' && output !== null && 'error' in output);
+        const isError = typeof output === 'object' && output !== null && 'error' in output;
 
-        toolCalls.push({ name: use.name, input: use.input, output });
-        emit({ type: 'tool', name: use.name, input: use.input, output });
+        toolCalls.push({ name: call.name, input: parsed, output });
+        emit({ type: 'tool', name: call.name, input: parsed, output });
         await recordEvent({
           kind: 'chat.tool',
-          summary: `Assistant called ${use.name}${isError ? ' (returned an error)' : ''}`,
-          detail: { name: use.name, input: use.input, output },
+          summary: `Assistant called ${call.name}${isError ? ' (returned an error)' : ''}`,
+          detail: { name: call.name, input: parsed, output },
         });
 
-        results.push({
-          type: 'tool_result',
-          tool_use_id: use.id,
-          content: JSON.stringify(output),
-          is_error: isError,
-        });
+        input.push({ type: 'function_call_output', call_id: call.call_id, output: JSON.stringify(output) });
       }
-
-      conversation.push({ role: 'user', content: results });
     }
 
-    lastError = null;
+    errorSlot.__haChatLastError = null;
   } catch (err) {
-    const aborted = err instanceof Anthropic.APIUserAbortError || controller.signal.aborted;
-    lastError = aborted
-      ? `The assistant did not finish within ${TURN_TIMEOUT_MS / 1000} seconds.`
-      : err instanceof Error
-        ? err.message
-        : String(err);
-    await recordEvent({ kind: 'error', summary: 'Live assistant turn failed', detail: { message: lastError } });
-    throw new Error(lastError);
+    const message = redactKeys(
+      controller.signal.aborted
+        ? `The assistant did not finish within ${TURN_TIMEOUT_MS / 1000} seconds.`
+        : err instanceof Error
+          ? err.message
+          : String(err),
+    );
+    errorSlot.__haChatLastError = message;
+    await recordEvent({ kind: 'error', summary: 'Live assistant turn failed', detail: { message } });
+    throw new Error(message);
   } finally {
     clearTimeout(deadline);
   }

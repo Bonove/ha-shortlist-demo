@@ -1,22 +1,25 @@
-import { REPOSITORY, REPOSITORY_URL, type SystemStatus } from '@/lib/contracts';
+import { REPOSITORY, REPOSITORY_URL, type PolicySnapshot, type SystemStatus } from '@/lib/contracts';
+import { MODEL, getLastError, isConfigured } from '@/lib/ai/chat';
 import { engineVersion, runtimeLabel } from '@/lib/lemma/engine';
 import { getActiveSnapshot } from '@/lib/policy/snapshots';
 import { readDoc } from '@/lib/store/db';
 import { engineHasRun } from '@/lib/harness/evaluate';
 
 export async function getStatus(): Promise<SystemStatus> {
-  const active = await getActiveSnapshot().catch(() => null);
+  let active: PolicySnapshot | null = null;
+  try {
+    active = getActiveSnapshot();
+  } catch {
+    active = null; // a broken policy store must not take the whole status down
+  }
   const session = await readDoc((d) => d.session);
   const last = Object.values(session.assessments).sort((a, b) =>
     a.evaluatedAt < b.evaluatedAt ? 1 : -1,
   )[0];
 
   return {
-    ai: {
-      configured: Boolean(process.env.ANTHROPIC_API_KEY),
-      model: process.env.ANTHROPIC_MODEL ?? null,
-      lastError: null, // only /api/chat sees assistant failures
-    },
+    // One source of truth for assistant configuration: the ai module's own.
+    ai: { configured: isConfigured(), model: isConfigured() ? MODEL : null, lastError: getLastError() },
     lemma: { runtime: runtimeLabel(), version: engineVersion(), loaded: engineHasRun() },
     activeSnapshot: active
       ? { id: active.id, label: active.label, sourceHash: active.sourceHash }

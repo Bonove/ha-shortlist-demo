@@ -12,9 +12,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.68.0",
     "@lemmabase/lemma-engine": "0.9.10",
     "next": "15.5.4",
+    "openai": "7.20.0",
     "react": "19.1.1",
     "react-dom": "19.1.1"
   },

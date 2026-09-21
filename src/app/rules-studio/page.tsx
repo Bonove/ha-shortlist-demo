@@ -1,3 +1,7 @@
+import { RulesStudio } from '@/components/studio/rules-studio-client';
+
+export const metadata = { title: 'Rules Studio · HousingAnywhere shortlist prototype' };
+
 export default function Page() {
-  return <div className="page-head"><h1>Rules Studio</h1></div>;
+  return <RulesStudio />;
 }

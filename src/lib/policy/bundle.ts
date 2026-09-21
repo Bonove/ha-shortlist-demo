@@ -21,12 +21,11 @@ export interface PolicyBundle {
 }
 
 export class BundleError extends Error {
-  constructor(
-    message: string,
-    readonly diagnostics: ValidationDiagnostic[],
-  ) {
+  readonly diagnostics: ValidationDiagnostic[];
+  constructor(message: string, diagnostics: ValidationDiagnostic[]) {
     super(message);
     this.name = 'BundleError';
+    this.diagnostics = diagnostics;
   }
 }
 

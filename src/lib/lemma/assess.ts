@@ -47,19 +47,57 @@ function statusOf(evaluation: LemmaEvaluation): FitStatus {
   return fit.boolean ? 'fits' : 'does-not-fit';
 }
 
-function summarise(status: FitStatus, costs: CostBreakdown, checks: CheckResult[], missing: string[]): string {
-  if (status === 'needs-information') {
-    return `More information is needed before this can be assessed: ${missing.join(', ')}.`;
+/**
+ * How a failed check reads in a sentence. CHECK_LABELS are positive statements
+ * ("Stay length meets the minimum"), which cannot be listed after "does not
+ * fit" without saying the opposite of what happened.
+ */
+const FAILURE_PHRASES: Record<string, string> = {
+  fits_monthly_budget: 'the monthly rent is above the tenant\'s limit',
+  fits_initial_payment_budget: 'the up-front cost is above the tenant\'s limit',
+  meets_minimum_stay: 'the home asks for a longer stay than the tenant intends',
+};
+
+/** Input names as a person would say them. */
+const INPUT_NAMES: Record<string, string> = {
+  requested_deposit: 'the deposit it asks for',
+  monthly_rent: 'its monthly rent',
+  listing_minimum_stay: 'its minimum stay',
+};
+
+const eur = (n: number | null) =>
+  n === null ? 'unknown' : `€${n.toLocaleString('en-GB', { maximumFractionDigits: n % 1 === 0 ? 0 : 2 })}`;
+
+/** Plain language, assembled only from values the engine returned. */
+export function summarise(tenant: TenantProfile, listing: Listing, a: Assessment): string {
+  const { costs } = a;
+  const money =
+    costs.initialPayment === null
+      ? ''
+      : ` Up front: ${eur(costs.monthlyRent)} first month + ${eur(costs.effectiveDeposit)} deposit +` +
+        ` ${eur(costs.bookingFee)} booking fee = ${eur(costs.initialPayment)}, against a` +
+        ` ${eur(tenant.maxInitialPayment)} limit.`;
+  const head = `${listing.name} (${listing.reference}) in ${listing.neighbourhood}, ${eur(costs.monthlyRent)} a month.`;
+
+  if (a.status === 'needs-information') {
+    const what = a.missingInputs.map((i) => INPUT_NAMES[i] ?? i.replace(/_/g, ' ')).join(' and ');
+    return `${head} The advertiser has not stated ${what}, so the up-front total cannot be worked out — it is unknown, not zero.`;
   }
-  if (status === 'evaluation-unavailable') {
-    return 'The policy engine could not produce a result for this listing.';
+  if (a.status === 'evaluation-unavailable') {
+    const reason = a.checks.find((c) => c.vetoReason)?.vetoReason;
+    return `${head} No verdict is available${reason ? `: ${reason}` : '.'}`;
   }
-  const money = `Initial payment ${euro(costs.initialPayment)} (rent ${euro(costs.monthlyRent)} + deposit ${euro(
-    costs.effectiveDeposit,
-  )} + booking fee ${euro(costs.bookingFee)}).`;
-  if (status === 'fits') return `Fits the stated requirements. ${money}`;
-  const failed = checks.filter((c) => c.passed === false).map((c) => c.label.toLowerCase());
-  return `Does not fit: ${failed.join('; ')}. ${money}`;
+  if (a.status === 'fits') {
+    return (
+      `${head} It fits: the rent is within ${eur(tenant.maxMonthlyRent)} a month, the up-front cost is within ` +
+      `${eur(tenant.maxInitialPayment)}, and ${tenant.intendedStayMonths} months meets the ` +
+      `${costs.effectiveMinimumStayMonths ?? listing.minimumStayMonths}-month minimum.${money}`
+    );
+  }
+  const failed = a.checks
+    .filter((c) => c.passed === false && c.rule !== 'offer_fits')
+    .map((c) => FAILURE_PHRASES[c.rule] ?? c.label.toLowerCase());
+  return `${head} It does not fit: ${failed.join('; ')}.${money}`;
 }
 
 /** Turn one engine run into a contract-shaped assessment. */
@@ -106,7 +144,8 @@ export function toAssessment(args: {
     checks,
     costs,
     missingInputs,
-    summary: summarise(status, costs, checks, missingInputs),
+    // Filled by assessListing, or by the harness once its own checks have run.
+    summary: '',
     raw: evaluation.raw,
     explanation: r.offer_fits?.explanation,
     tenantRevision: tenant.revision,
@@ -131,5 +170,12 @@ export function assessListing(args: {
     effective: args.effective,
     explain: args.explain ?? true,
   });
-  return toAssessment({ evaluation, snapshot: args.snapshot, listing: args.listing, tenant: args.tenant });
+  const assessment = toAssessment({
+    evaluation,
+    snapshot: args.snapshot,
+    listing: args.listing,
+    tenant: args.tenant,
+  });
+  assessment.summary = summarise(args.tenant, args.listing, assessment);
+  return assessment;
 }

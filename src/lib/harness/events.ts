@@ -18,10 +18,10 @@ export function appendEvent(
 }
 
 /** Append from outside a transaction, e.g. an assistant tool call. */
-export function logEvent(
-  kind: HarnessEvent['kind'],
-  summary: string,
-  detail?: Record<string, unknown>,
-): Promise<HarnessEvent> {
-  return transact((doc) => appendEvent(doc.session, kind, summary, detail));
+export function recordEvent(event: {
+  kind: HarnessEvent['kind'];
+  summary: string;
+  detail?: Record<string, unknown>;
+}): Promise<HarnessEvent> {
+  return transact((doc) => appendEvent(doc.session, event.kind, event.summary, event.detail));
 }

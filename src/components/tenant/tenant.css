@@ -26,7 +26,7 @@
 
 .listing-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(288px, 1fr));
   gap: 18px;
 }
 
@@ -41,9 +41,9 @@
   position: relative;
   aspect-ratio: 16 / 9;
   background:
-    radial-gradient(120% 90% at 18% 12%, hsl(var(--hue) 82% 78% / 95%), transparent 62%),
-    radial-gradient(90% 80% at 88% 22%, hsl(calc(var(--hue) + 38) 72% 70% / 85%), transparent 58%),
-    linear-gradient(168deg, hsl(var(--hue) 46% 52%), hsl(calc(var(--hue) + 24) 38% 34%));
+    radial-gradient(120% 90% at 18% 10%, hsl(var(--hue) 88% 76% / 92%), transparent 60%),
+    radial-gradient(85% 80% at 90% 26%, hsl(calc(var(--hue) + 16) 80% 62% / 78%), transparent 56%),
+    linear-gradient(168deg, hsl(var(--hue) 58% 48%), hsl(calc(var(--hue) - 12) 46% 27%));
 }
 .listing-art::after {
   content: '';
@@ -69,6 +69,7 @@
 .listing-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
 .listing-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .listing-title h3 { font-size: 16px; }
+.listing-grid[data-count='1'] { grid-template-columns: minmax(0, 520px); }
 .listing-title .sub { font-size: 12.5px; color: var(--muted-foreground); margin-top: 2px; }
 
 .figures { display: grid; gap: 1px; background: var(--border); border-radius: var(--radius); overflow: hidden; }
