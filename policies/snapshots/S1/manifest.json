@@ -1,0 +1,23 @@
+{
+  "id": "S1",
+  "label": "S1 — lower booking fee",
+  "description": "Booking fee reduced from 150 eur to 100 eur. Deposits and minimum stays unchanged.",
+  "step": 1,
+  "files": [
+    {
+      "path": "shortlist_policy.lemma"
+    }
+  ],
+  "sourceHash": "sha256:fba1f13537eaf318d6bf55e626fb3e9fee212b53a5ddacc04bf377708464f415",
+  "provenance": "live-repository-read",
+  "publication": {
+    "repository": "@tristan-van-doorn/ha-shortlist-demo",
+    "repositoryUrl": "https://lemmabase.com/@tristan-van-doorn/ha-shortlist-demo",
+    "spec": "shortlist_policy",
+    "retrievedAt": "2026-09-21T09:31:43.881Z",
+    "message": "S1: booking fee reduced from 150 eur to 100 eur",
+    "specEffectiveFrom": "2026-01-01",
+    "revision": "01a0c34e-733b-7d8a-9deb-0399e8f008c4"
+  },
+  "capturedAt": "2026-09-21T09:31:43.881Z"
+}

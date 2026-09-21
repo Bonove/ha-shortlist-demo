@@ -1,0 +1,23 @@
+{
+  "id": "S0",
+  "label": "S0 — baseline",
+  "description": "Flat 150 eur booking fee, deposits exactly as requested, published minimum stays.",
+  "step": 0,
+  "files": [
+    {
+      "path": "shortlist_policy.lemma"
+    }
+  ],
+  "sourceHash": "sha256:efe4d189093971800aaeb812c234149308c1ab01bde2d6cbc804e3f313733920",
+  "provenance": "live-repository-read",
+  "publication": {
+    "repository": "@tristan-van-doorn/ha-shortlist-demo",
+    "repositoryUrl": "https://lemmabase.com/@tristan-van-doorn/ha-shortlist-demo",
+    "spec": "shortlist_policy",
+    "retrievedAt": "2026-09-21T09:31:23.833Z",
+    "message": "S0 baseline: 150 eur booking fee, deposits as requested, published minimum stays",
+    "specEffectiveFrom": "2026-01-01",
+    "revision": "01a0c34d-d710-756b-941a-8e917af9a909"
+  },
+  "capturedAt": "2026-09-21T09:31:23.834Z"
+}

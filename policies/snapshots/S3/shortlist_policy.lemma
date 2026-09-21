@@ -1,0 +1,65 @@
+spec shortlist_policy 2026-01-01
+"""
+Booking fee 100 eur, deposit capped at one month's rent, and an approved
+exception that lets the Park Apartment accept a five month stay.
+Fictional demonstration policy for the HousingAnywhere shortlist prototype.
+Illustrative only: it does not describe HousingAnywhere policy or Dutch law.
+Initial payment = first month's rent + deposit + booking fee.
+"""
+
+uses lemma units
+
+data money: measure
+  -> unit eur: 1.00
+  -> decimals 2
+  -> minimum 0 eur
+
+data listing_reference: text
+  -> help "Which home is being assessed?"
+
+data monthly_rent: money
+  -> help "What is the monthly rent for this home?"
+
+data requested_deposit: money
+  -> help "What deposit does the advertiser ask for this home?"
+
+data listing_minimum_stay: units.calendar
+  -> help "What is the shortest stay this home accepts?"
+
+data intended_stay: units.calendar
+  -> help "How long does the tenant intend to stay?"
+
+data maximum_monthly_rent: money
+  -> help "What is the most the tenant wants to pay per month?"
+
+data maximum_initial_payment: money
+  -> help "What is the most the tenant can pay up front?"
+
+
+rule booking_fee:
+  100 eur
+
+rule effective_deposit:
+  requested_deposit
+  unless requested_deposit > monthly_rent
+    then monthly_rent
+
+rule initial_payment:
+  monthly_rent + effective_deposit + booking_fee
+
+rule effective_minimum_stay:
+  listing_minimum_stay
+  unless listing_reference is "C" then 5 month
+
+rule fits_monthly_budget:
+  monthly_rent <= maximum_monthly_rent
+
+rule fits_initial_payment_budget:
+  initial_payment <= maximum_initial_payment
+
+rule meets_minimum_stay:
+  intended_stay >= effective_minimum_stay
+
+rule offer_fits:
+  fits_monthly_budget and fits_initial_payment_budget
+  and meets_minimum_stay

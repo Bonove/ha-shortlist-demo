@@ -1,0 +1,23 @@
+{
+  "id": "S3",
+  "label": "S3 — approved stay exception",
+  "description": "Booking fee 100 eur, deposit capped at one month's rent, and an approved exception letting the Park Apartment accept a five month stay.",
+  "step": 3,
+  "files": [
+    {
+      "path": "shortlist_policy.lemma"
+    }
+  ],
+  "sourceHash": "sha256:9e6e2b080e85c2a0acc751446d0c91480aa6bb5650060f881e3649199102b29c",
+  "provenance": "live-repository-read",
+  "publication": {
+    "repository": "@tristan-van-doorn/ha-shortlist-demo",
+    "repositoryUrl": "https://lemmabase.com/@tristan-van-doorn/ha-shortlist-demo",
+    "spec": "shortlist_policy",
+    "retrievedAt": "2026-09-21T09:32:21.174Z",
+    "message": "S3: approved exception lets the Park Apartment accept a five month stay",
+    "specEffectiveFrom": "2026-01-01",
+    "revision": "01a0c34f-095e-7516-a8c5-ef5c39d4eaa4"
+  },
+  "capturedAt": "2026-09-21T09:32:21.175Z"
+}
