@@ -69,7 +69,11 @@
 .listing-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
 .listing-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .listing-title h3 { font-size: 16px; }
-.listing-grid[data-count='1'] { grid-template-columns: minmax(0, 520px); }
+/* A lone shortlisted home reads as the hero, but only where there is room. */
+@media (min-width: 900px) {
+  .listing-grid[data-count='1'] { grid-template-columns: minmax(0, 520px); }
+  .listing-grid[data-count='1'] .listing-art { aspect-ratio: 24 / 9; }
+}
 .listing-title .sub { font-size: 12.5px; color: var(--muted-foreground); margin-top: 2px; }
 
 .figures { display: grid; gap: 1px; background: var(--border); border-radius: var(--radius); overflow: hidden; }

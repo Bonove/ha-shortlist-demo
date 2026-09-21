@@ -23,6 +23,7 @@ import {
   PROVENANCE_TEXT,
   ProvenancePill,
   shortHash,
+  snapshotTitle,
   StatusPill,
   when,
   type DiffLine,
@@ -414,7 +415,7 @@ function SourceTab({
         <select className="select" style={{ width: 260 }} value={viewId ?? ''} onChange={(e) => onView(e.target.value)}>
           {(index?.snapshots ?? []).map((s) => (
             <option key={s.id} value={s.id}>
-              {s.label}
+              {snapshotTitle(s.id, s.label)}
             </option>
           ))}
         </select>
@@ -808,7 +809,7 @@ function HistoryCard({
               <div key={s.id} className="list-row" data-active={isActive}>
                 <span className="grow">
                   <div className="title">
-                    {s.label}
+                    {snapshotTitle(s.id, s.label)}
                     {isActive ? <span className="pill pill-accent" style={{ marginLeft: 8 }}>Active</span> : null}
                     {s.id === viewId && !isActive ? (
                       <span className="pill pill-neutral" style={{ marginLeft: 8 }}>
@@ -913,7 +914,7 @@ function TransferCard({
           >
             {(index?.snapshots ?? []).map((s) => (
               <option key={s.id} value={s.id}>
-                {s.label}
+                {snapshotTitle(s.id, s.label)}
               </option>
             ))}
           </select>

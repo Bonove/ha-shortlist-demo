@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { ChatPanel } from '@/components/chat/chat-panel';
 import { useSession } from '@/components/use-session';
 import { ComparePanel } from '@/components/tenant/compare-panel';
+import type { ApplyOutcome } from '@/components/tenant/listing-card';
 import { ListingCard, STATUS_ORDER, displayStatus, stalenessReasons } from '@/components/tenant/listing-card';
 import { RequirementsCard } from '@/components/tenant/requirements-card';
 import { WhyPanel } from '@/components/tenant/why-panel';
@@ -24,6 +25,7 @@ function Skeleton() {
 export default function Page() {
   const { session, status, loading, error, refresh, mutate } = useSession();
   const [whyRef, setWhyRef] = useState<string | null>(null);
+  const [outcomes, setOutcomes] = useState<Record<string, ApplyOutcome | null>>({});
   const [rerunning, setRerunning] = useState(false);
   const [rerunError, setRerunError] = useState<string | null>(null);
 
@@ -161,7 +163,9 @@ export default function Page() {
                           session={session}
                           status={status}
                           application={(session.applications ?? []).find((a) => a.listingReference === l.reference)}
+                          outcome={outcomes[l.reference] ?? null}
                           onWhy={() => setWhyRef(l.reference)}
+                          onOutcome={(o) => setOutcomes((prev) => ({ ...prev, [l.reference]: o }))}
                           onChanged={() => void refresh()}
                         />
                       ))}
@@ -183,7 +187,9 @@ export default function Page() {
                             session={session}
                             status={status}
                             application={(session.applications ?? []).find((a) => a.listingReference === l.reference)}
+                            outcome={outcomes[l.reference] ?? null}
                             onWhy={() => setWhyRef(l.reference)}
+                            onOutcome={(o) => setOutcomes((prev) => ({ ...prev, [l.reference]: o }))}
                             onChanged={() => void refresh()}
                           />
                         ))}

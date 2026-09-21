@@ -26,6 +26,12 @@
 .dot-warn { background: var(--warning); }
 .dot-bad { background: var(--destructive); }
 
+/* Below the presentation target the bar keeps the two chips that carry the
+   honesty claim — snapshot and LemmaBase mode. The rest stays in the popover. */
+@media (max-width: 1180px) {
+  .presenter-chips > :nth-child(-n + 4) { display: none; }
+}
+
 .popover {
   position: absolute; top: calc(100% + 10px); right: 0; z-index: 60;
   width: 420px; max-height: 76vh; overflow: auto;
@@ -98,6 +104,8 @@
   background: var(--surface-sunken);
 }
 .banner b { font-weight: 650; }
+/* engine messages carry full sha256 hashes — they must wrap, not widen the page */
+.banner > * { min-width: 0; overflow-wrap: anywhere; }
 .banner-warn { background: var(--warning-soft); border-color: oklch(0.72 0.15 75 / 38%); }
 .banner-info { background: var(--info-soft); border-color: oklch(0.55 0.11 250 / 30%); }
 .banner-bad { background: var(--destructive-soft); border-color: oklch(0.577 0.245 27.325 / 32%); }
@@ -135,7 +143,7 @@
   flex: none; font-family: var(--mono); font-size: 11.5px;
   color: var(--muted-foreground); min-width: 120px;
 }
-.diag-msg { min-width: 0; }
+.diag-msg { min-width: 0; overflow-wrap: anywhere; }
 .diag-msg .suggestion { display: block; margin-top: 4px; color: var(--muted-foreground); font-size: 12px; }
 
 /* ----------------------------------------------------------- list rows */

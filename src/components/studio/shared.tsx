@@ -79,6 +79,11 @@ export function shortHash(hash: string | null | undefined): string {
   return hash.replace(/^sha256:/, '').slice(0, 8);
 }
 
+/** Stored labels usually already start with the id; imported ones do not. */
+export function snapshotTitle(id: string, label: string): string {
+  return label.startsWith(id) ? label : `${id} — ${label}`;
+}
+
 export function when(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -190,12 +195,21 @@ export function ErrorNote({ error, onRetry }: { error: string; onRetry?: () => v
   );
 }
 
-/** Browser-side file download — used for bundle export and draft source. */
+/**
+ * Browser-side file download — used for bundle export and draft source.
+ * The anchor must be in the document and the object URL must outlive the click,
+ * or Chrome cancels the download.
+ */
 export function download(filename: string, contents: string, type = 'application/json') {
   const url = URL.createObjectURL(new Blob([contents], { type }));
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 2000);
 }

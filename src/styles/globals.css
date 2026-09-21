@@ -217,6 +217,16 @@ pre.code, .code {
 @media (max-width: 1100px) {
   .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* The app bar carries the wordmark, three nav links and the presenter chips.
+   Below roughly 1060px that content no longer fits, so tighten the nav and let
+   the bar itself scroll rather than giving the whole page a scrollbar. */
+@media (max-width: 1100px) {
+  .appbar-inner { gap: 14px; overflow-x: auto; scrollbar-width: none; }
+  .appbar-inner::-webkit-scrollbar { display: none; }
+  .nav a { padding: 7px 10px; font-size: 13px; }
+  .wordmark { font-size: 15px; }
+}
+
 @media (max-width: 820px) {
   .shell, .appbar-inner { padding-left: 16px; padding-right: 16px; }
   .grid-2, .grid-3 { grid-template-columns: minmax(0, 1fr); }

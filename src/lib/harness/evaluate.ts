@@ -30,9 +30,12 @@ const NO_COSTS: CostBreakdown = {
   effectiveMinimumStayMonths: null,
 };
 
-let engineOk = false;
+// Next bundles each route handler separately, so a module-level flag set by
+// /api/evaluate is invisible to /api/status. The flag lives on globalThis so
+// every bundle sees the same one.
+const engineFlag = globalThis as { __haEngineOk?: boolean };
 /** Whether a real engine run has succeeded in this process. Used by status. */
-export const engineHasRun = () => engineOk;
+export const engineHasRun = () => engineFlag.__haEngineOk === true;
 
 export function assess(
   tenant: TenantProfile,
@@ -42,10 +45,10 @@ export function assess(
   let assessment: Assessment;
   try {
     assessment = assessListing({ snapshot, tenant, listing, explain: true });
-    engineOk = true;
+    engineFlag.__haEngineOk = true;
   } catch (error) {
     // An engine failure is shown, never smoothed over into a zero or a "no".
-    engineOk = false;
+    engineFlag.__haEngineOk = false;
     const message = error instanceof Error ? error.message : String(error);
     const at = new Date().toISOString();
     return {

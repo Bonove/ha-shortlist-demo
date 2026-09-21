@@ -107,13 +107,18 @@ export function Figure({
   );
 }
 
+/** Result of the last "continue" attempt. */
+export type ApplyOutcome = { kind: 'ok' | 'refused' | 'error'; text: string };
+
 export function ListingCard({
   listing,
   assessment,
   session,
   status,
   application,
+  outcome,
   onWhy,
+  onOutcome,
   onChanged,
 }: {
   listing: Listing;
@@ -121,11 +126,17 @@ export function ListingCard({
   session: SessionState;
   status: SystemStatus | null;
   application: DemoApplication | undefined;
+  /**
+   * Held by the page, not the card: a refusal moves the listing out of the
+   * fitting group, which would otherwise unmount the card and lose the reason.
+   */
+  outcome: ApplyOutcome | null;
   onWhy: () => void;
+  onOutcome: (outcome: ApplyOutcome | null) => void;
   onChanged: () => void;
 }) {
   const [busy, setBusy] = useState(false);
-  const [outcome, setOutcome] = useState<{ kind: 'ok' | 'refused' | 'error'; text: string } | null>(null);
+  const setOutcome = onOutcome;
 
   const fit = displayStatus(assessment);
   const meta = STATUS_META[fit];
