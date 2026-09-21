@@ -1,4 +1,6 @@
 import { runChatTurn, type ChatEvent } from '@/lib/ai/chat';
+import { updateSession } from '@/lib/store/db';
+import { recordEvent } from '@/lib/harness/events';
 
 export const runtime = 'nodejs';
 
@@ -41,4 +43,17 @@ export async function POST(request: Request) {
       connection: 'keep-alive',
     },
   });
+}
+
+/**
+ * Clear the conversation only. Tenant profile, listings, assessments and the
+ * active policy are untouched: a presenter restarting the chat is not resetting
+ * the demo, and the next turn must still see the same confirmed context.
+ */
+export async function DELETE() {
+  const session = await updateSession((s) => {
+    s.messages = [];
+  });
+  await recordEvent({ kind: 'chat.message', summary: 'Conversation cleared by the presenter' });
+  return Response.json({ messages: session.messages.length });
 }

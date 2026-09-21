@@ -92,6 +92,22 @@ export function ChatPanel() {
     }
   }
 
+  async function clearConversation() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await fetch('/api/chat', { method: 'DELETE' });
+      setMessages([]);
+      setStreaming('');
+      setLiveTools([]);
+      setError(null);
+    } catch {
+      setError('Could not clear the conversation.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function send(text: string) {
     if (!text.trim() || busy) return;
     setBusy(true);
@@ -135,6 +151,16 @@ export function ChatPanel() {
       <div className="card-head">
         <h2>Assistant</h2>
         <span className="spacer" />
+        {messages.length > 0 && (
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={clearConversation}
+            disabled={busy}
+            title="Clears the conversation only. The confirmed requirements, the listings and the active policy stay as they are."
+          >
+            Clear
+          </button>
+        )}
         {status === null ? (
           <span className="pill pill-neutral">Checking…</span>
         ) : status.configured ? (
