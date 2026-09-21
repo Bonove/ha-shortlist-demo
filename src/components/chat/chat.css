@@ -1,0 +1,18 @@
+/* Assistant messages render a small subset of Markdown; these are the only
+   styles it needs. Scoped so nothing else in the app inherits them. */
+
+.md { font-size: 14px; line-height: 1.55; }
+.md > * + * { margin-top: 10px; }
+.md p { margin: 0; }
+.md ul, .md ol { margin: 0; padding-left: 20px; }
+.md li + li { margin-top: 4px; }
+.md li::marker { color: var(--muted-foreground); }
+.md h4 { font-size: 14px; font-weight: 650; }
+.md strong { font-weight: 650; }
+.md code {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-size: 12.5px;
+}

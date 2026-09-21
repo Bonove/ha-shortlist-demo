@@ -2,6 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { ChatMessage } from '@/lib/contracts';
+import { SESSION_CHANGED_EVENT } from '@/components/use-session';
+import { STATUS_REFRESH_EVENT } from '@/components/presenter-bar';
+import { Markdown } from './markdown';
+import './chat.css';
 
 type Status = { configured: boolean; model: string | null; lastError: string | null };
 type LiveTool = { name: string; input: unknown; output: unknown };
@@ -135,6 +139,10 @@ export function ChatPanel() {
         else if (event === 'done') setMessages((m) => [...m, data.message as ChatMessage]);
       }
       await syncSession();
+      // A turn can have changed the profile and re-run the policy through the
+      // assistant's tools, so the rest of the page has to catch up.
+      window.dispatchEvent(new CustomEvent(SESSION_CHANGED_EVENT));
+      window.dispatchEvent(new CustomEvent(STATUS_REFRESH_EVENT));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -195,12 +203,12 @@ export function ChatPanel() {
                 borderRadius: 'var(--radius)',
                 padding: m.role === 'user' ? '10px 14px' : 0,
                 maxWidth: m.role === 'user' ? '80%' : undefined,
-                whiteSpace: 'pre-wrap',
+                whiteSpace: m.role === 'user' ? 'pre-wrap' : undefined,
                 fontSize: 14,
                 lineHeight: 1.55,
               }}
             >
-              {m.content}
+              {m.role === 'user' ? m.content : <Markdown text={m.content} />}
             </div>
             {m.outdated && (
               <span className="pill pill-info">
@@ -215,8 +223,12 @@ export function ChatPanel() {
           <div className="col" style={{ gap: 4 }}>
             <span className="eyebrow">Assistant</span>
             {liveTools.length > 0 && <ToolStrip calls={liveTools} />}
-            <div style={{ whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.55 }}>
-              {streaming || <span className="row muted" style={{ fontSize: 13 }}><span className="spin" /> Thinking…</span>}
+            <div style={{ fontSize: 14, lineHeight: 1.55 }}>
+              {streaming ? (
+                <Markdown text={streaming} />
+              ) : (
+                <span className="row muted" style={{ fontSize: 13 }}><span className="spin" /> Thinking…</span>
+              )}
             </div>
           </div>
         )}

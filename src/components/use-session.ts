@@ -4,6 +4,13 @@ import { useCallback, useEffect, useState } from 'react';
 import type { SessionState, SystemStatus } from '@/lib/contracts';
 
 /**
+ * Anything that changes shared state announces it here. The assistant can move
+ * the tenant's requirements and re-run the policy through its tools, and when
+ * it does, the listing cards beside it must not keep showing the old verdicts.
+ */
+export const SESSION_CHANGED_EVENT = 'ha:session-changed';
+
+/**
  * Shared read of the harness session. Imported by every UI agent, so the
  * surface stays deliberately small: one fetch, one refresh, one local write
  * for routes that already hand a fresh session back (POST /api/scenario).
@@ -32,6 +39,9 @@ export function useSession() {
 
   useEffect(() => {
     void refresh();
+    const onChanged = () => void refresh();
+    window.addEventListener(SESSION_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(SESSION_CHANGED_EVENT, onChanged);
   }, [refresh]);
 
   return { session, status, loading, error, refresh, mutate: setSession };
