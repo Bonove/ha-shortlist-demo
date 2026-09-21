@@ -15,7 +15,9 @@ import type { PolicyDraft, PolicySnapshot, PolicySourceFile, SnapshotId } from '
 import { hashBundle } from '@/lib/policy/hash';
 
 const SNAPSHOT_DIR = join(process.cwd(), 'policies', 'snapshots');
-const STATE_FILE = join(process.cwd(), 'data', 'policy-state.json');
+// See HA_DATA_DIR in src/lib/store/db.ts: tests point this at a scratch copy.
+const DATA_DIR = join(process.cwd(), process.env.HA_DATA_DIR || 'data');
+const STATE_FILE = join(DATA_DIR, 'policy-state.json');
 const DEFAULT_ACTIVE: SnapshotId = 'S0';
 
 export interface PolicyState {
@@ -67,7 +69,7 @@ export function integrityIssues(): string[] {
 
 export function readState(): PolicyState {
   if (!existsSync(STATE_FILE)) {
-    mkdirSync(join(process.cwd(), 'data'), { recursive: true });
+    mkdirSync(DATA_DIR, { recursive: true });
     const fresh: PolicyState = { activeId: DEFAULT_ACTIVE, previousId: null, importedSnapshots: [], drafts: [] };
     writeState(fresh);
     return fresh;
@@ -82,7 +84,7 @@ export function readState(): PolicyState {
 }
 
 export function writeState(state: PolicyState): void {
-  mkdirSync(join(process.cwd(), 'data'), { recursive: true });
+  mkdirSync(DATA_DIR, { recursive: true });
   // Write-then-rename so a crash mid-write cannot leave a half-written pointer.
   const tmp = `${STATE_FILE}.tmp`;
   writeFileSync(tmp, `${JSON.stringify(state, null, 2)}\n`, 'utf8');

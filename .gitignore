@@ -6,3 +6,4 @@ data/*.json
 !data/.gitkeep
 .next-verify
 *.tsbuildinfo
+data-test

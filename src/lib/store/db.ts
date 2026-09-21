@@ -5,7 +5,9 @@ import type { ScenarioSnapshot, SessionState } from '@/lib/contracts';
 import { seedListings } from '@/lib/domain/listings';
 import { seedTenant } from '@/lib/domain/tenant';
 
-const FILE = join(process.cwd(), 'data', 'session.json');
+// HA_DATA_DIR lets the test suite work in a scratch directory instead of the
+// demo's own state, so running tests can never leave a presentation mid-walk.
+const FILE = join(process.cwd(), process.env.HA_DATA_DIR || 'data', 'session.json');
 
 /** Everything the harness owns. Policy state belongs to lemma-core. */
 export interface HarnessDoc {
