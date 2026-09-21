@@ -19,7 +19,8 @@ npm run dev              # http://localhost:3210
 
 The application runs entirely on the captured published snapshots in
 `policies/snapshots/`. It needs no connection to LemmaBase or Claude Code once
-those are in place. Without an API key everything works except the live chat,
+those are in place; `LEMMABASE_API_KEY` is optional and only adds the read-only
+cross-check described below. Without an API key everything works except the live chat,
 which says so plainly rather than falling back to a script.
 
 ```bash
@@ -77,8 +78,16 @@ up front):
 
 ## Editing a policy and getting it back into the app
 
-The running app has no LemmaBase credentials and deliberately offers no
-"Publish to LemmaBase" button. The supported round trip is:
+Set `LEMMABASE_API_KEY` and the app gains a **read-only** connection: Rules
+Studio can then cross-check the frozen listings against whatever the repository
+publishes right now, and the presenter bar says "LemmaBase linked" instead of
+"Stored snapshot". What the harness *executes* never changes — that is always
+the activated snapshot, which is the point of the cross-check.
+
+The documented REST API (`GET /`, `GET /{spec}`, `POST /{spec}`) returns
+schemas and evaluates. It exposes **no endpoint that returns source text and
+none that publishes**, so there is deliberately no "Publish" button and a new
+snapshot still has to come back through MCP. The supported round trip is:
 
 1. **Edit** — in Rules Studio, change the local draft. It is labelled a local
    edit; it is not a published version.

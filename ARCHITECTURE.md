@@ -84,13 +84,21 @@ it; LemmaBase reformats source canonically on publication, so the two differ.
 
 ## Connectivity, stated honestly
 
-The running application holds no LemmaBase credentials by default. It executes
-**stored published snapshots** and says so in the presenter bar. The Claude Code
-MCP connection used to author and publish these policies is a development
-integration and does not give the application access to LemmaBase.
+The application executes **stored published snapshots** and says so in the
+presenter bar. The Claude Code MCP connection used to author and publish these
+policies is a development integration; it is not what the running app uses.
 
-A direct application-to-LemmaBase read is optional and off unless
-`LEMMABASE_API_KEY` is configured server-side.
+A direct application-to-LemmaBase connection is optional and appears only when
+`LEMMABASE_API_KEY` is set server-side. It is **read only, and deliberately
+cannot feed the runtime**: the documented REST API returns schemas and
+evaluates, but exposes no source text and no publish operation. What it buys is
+a live cross-check — evaluate the same listings against the repository's current
+publication and against the activated snapshot, side by side. When they differ,
+that is the proof that a newer publication did not silently change what runs.
+
+The presenter bar therefore distinguishes three things that are easy to conflate:
+credentials being present, a live read having succeeded this session, and the
+source the engine is actually executing. Only the last one decides results.
 
 ## Policy changes versus scenario changes
 

@@ -974,20 +974,130 @@ function TransferCard({
 }
 
 function HandoffCard() {
+  const [live, setLive] = useState<{ connected: boolean; commentary?: string | null; reason?: string } | null>(null);
+  const [check, setCheck] = useState<{
+    drift: boolean;
+    active: { id: string; label: string };
+    rows: {
+      reference: string;
+      name: string;
+      local: { initialPayment: number | null; fits: boolean };
+      live: { initialPayment: number | null; fits: boolean | null };
+      differs: boolean;
+    }[];
+  } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    api<{ connected: boolean; commentary?: string | null; reason?: string }>('/api/policy/lemmabase')
+      .then(setLive)
+      .catch(() => setLive({ connected: false, reason: 'The connection check failed.' }));
+  }, []);
+
+  async function crossCheck() {
+    setBusy(true);
+    setErr(null);
+    try {
+      setCheck(await api('/api/policy/lemmabase', { method: 'POST' }));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <section className="card">
       <div className="card-head">
-        <h2>Publishing to LemmaBase</h2>
+        <h2>LemmaBase connection</h2>
       </div>
       <div className="card-pad stack-sm">
+        {live === null ? (
+          <Loading label="Checking the repository…" />
+        ) : live.connected ? (
+          <div className="banner banner-info">
+            <span>
+              <b>Connected, read only.</b> The server can reach {REPOSITORY} and evaluate against whatever it
+              publishes. It still executes the stored snapshot below — a live connection never changes the
+              runtime policy.
+            </span>
+          </div>
+        ) : (
+          <div className="banner banner-warn">
+            <span>
+              <b>Not connected.</b> {live.reason} The prototype runs entirely on its captured snapshots.
+            </span>
+          </div>
+        )}
+
         <div className="banner banner-warn">
           <span>
-            <b>This app cannot publish.</b> It holds no LemmaBase credentials and has no supported publishing
-            integration, so there is deliberately no “Publish” button here.
+            <b>This app cannot publish.</b> The documented REST API reads schemas and evaluates; it exposes no
+            endpoint that returns source text and none that publishes. So there is deliberately no “Publish”
+            button, and a new snapshot still has to be captured through the handoff below.
           </span>
         </div>
 
-        <span className="eyebrow">Handoff</span>
+        {live?.connected && (
+          <>
+            <span className="eyebrow">Cross-check against the live repository</span>
+            <p className="muted" style={{ fontSize: 12, lineHeight: 1.6 }}>
+              Evaluates the same listings twice: once through the local engine on the active snapshot, and once
+              through LemmaBase on whatever it publishes right now. A difference means the repository has moved
+              ahead and the runtime has deliberately not followed it.
+            </p>
+            <button className="btn btn-sm" onClick={crossCheck} disabled={busy}>
+              {busy ? 'Checking…' : 'Check against LemmaBase'}
+            </button>
+            {err && <ErrorNote error={err} onRetry={crossCheck} />}
+            {check && (
+              <>
+                <div className={check.drift ? 'banner banner-warn' : 'banner banner-ok'}>
+                  <span>
+                    {check.drift ? (
+                      <>
+                        <b>The repository is ahead.</b> LemmaBase publishes different results from{' '}
+                        {check.active.label}, which is what the harness executes. Nothing switched by itself.
+                      </>
+                    ) : (
+                      <>
+                        <b>In step.</b> LemmaBase currently publishes the same results as {check.active.label}.
+                      </>
+                    )}
+                  </span>
+                </div>
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Listing</th>
+                      <th className="num">Here ({check.active.id})</th>
+                      <th className="num">LemmaBase now</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {check.rows.map((r) => (
+                      <tr key={r.reference} className={r.differs ? 'changed' : undefined}>
+                        <td>
+                          <b>{r.reference}</b> — {r.name}
+                        </td>
+                        <td className="num">
+                          {money(r.local.initialPayment)} · {r.local.fits ? 'fits' : 'does not fit'}
+                        </td>
+                        <td className="num">
+                          {money(r.live.initialPayment)} ·{' '}
+                          {r.live.fits === null ? 'no verdict' : r.live.fits ? 'fits' : 'does not fit'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+          </>
+        )}
+
+        <span className="eyebrow">Handoff for a new snapshot</span>
         <ol className="steps-ol">
           <li>
             <b>Export</b> the draft source from the Local draft tab.
@@ -996,7 +1106,8 @@ function HandoffCard() {
             <b>Publish</b> it through Claude Code’s LemmaBase MCP connection or the LemmaBase web interface.
           </li>
           <li>
-            <b>Retrieve</b> the published source back from LemmaBase and export it as a bundle.
+            <b>Retrieve</b> the published source back and capture it as a bundle. Source text is only available
+            over MCP, which is why this step cannot happen inside the app.
           </li>
           <li>
             <b>Import</b> that bundle here, then activate it.
@@ -1004,10 +1115,10 @@ function HandoffCard() {
         </ol>
 
         <p className="muted" style={{ fontSize: 12, lineHeight: 1.6 }}>
-          The Claude Code MCP connection is a <b>development integration</b> used while building this prototype. It
-          does not give the running application access to LemmaBase. A bundle brought back through import carries
-          provenance <span className="mono">import-metadata</span> — its publication details were supplied by the
-          file, not confirmed by a live repository read.
+          The Claude Code MCP connection is a <b>development integration</b> used while building this prototype.
+          A bundle brought back through import carries provenance{' '}
+          <span className="mono">import-metadata</span> — its publication details were supplied by the file, not
+          confirmed by a live repository read.
         </p>
 
         <a className="link-out" href={REPOSITORY_URL} target="_blank" rel="noreferrer">

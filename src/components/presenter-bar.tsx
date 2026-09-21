@@ -105,7 +105,7 @@ export function PresenterBar() {
             <span className="presenter-sep" />
             <span className="presenter-chip">
               <span className={`dot ${connected ? 'dot-ok' : 'dot-warn'}`} />
-              {connected ? 'LemmaBase live' : 'Stored snapshot'}
+              {connected ? 'LemmaBase linked' : 'Stored snapshot'}
             </span>
           </>
         )}
@@ -234,8 +234,8 @@ function StatusPopover({
               <span className="k">This session</span>
               <span className="v">
                 {status.lemmabase.mode === 'connected'
-                  ? 'Currently connected to LemmaBase — source was read live.'
-                  : 'Using a stored published snapshot. The running app holds no LemmaBase credentials and did not contact the service.'}
+                  ? 'Connected to LemmaBase this session, read only. What runs is still the stored snapshot below — the API exposes schemas and evaluation, not source text.'
+                  : 'Using a stored published snapshot. The running app has not contacted LemmaBase this session.'}
               </span>
             </div>
             <div className="pop-line">
