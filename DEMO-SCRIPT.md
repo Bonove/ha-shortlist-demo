@@ -66,7 +66,19 @@ accept a five-month stay.
 C turns green. All three homes now fit. These are checks against Alex's stated
 requirements, not judgements about Alex.
 
-### 2:25 — The audit view (20s)
+### 2:20 — Proof that nothing moves by itself (20s)
+
+Still in Rules Studio, scroll to **LemmaBase connection** and press **Check
+against LemmaBase**.
+
+The repository currently publishes S3. The harness is running whatever you last
+activated. The table shows both, side by side, and says *"The repository is
+ahead… Nothing switched by itself."*
+
+That is the whole governance argument in one screen: the policy can move without
+the runtime moving, and you can see the gap rather than discover it.
+
+### 2:40 — The audit view (20s)
 
 Open **Change comparison**. Baseline plus every cumulative step, the real source
 diff between steps, every listing at every step, and the difference from both the
@@ -74,7 +86,7 @@ previous step and the baseline — all computed against one frozen input set.
 
 Note that inspecting a step here does **not** activate it.
 
-### 2:45 — Restore and close (15s)
+### 2:55 — Restore and close (15s)
 
 In Rules Studio, hit **Restore S0**. Everything returns to the baseline results.
 
