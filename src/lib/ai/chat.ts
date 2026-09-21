@@ -14,7 +14,25 @@ import { getActiveSnapshot } from '@/lib/policy/snapshots';
 import { recordEvent } from '@/lib/harness/events';
 import { TOOL_DEFINITIONS, runTool } from './tools';
 
-export const MODEL = process.env.OPENAI_MODEL || 'gpt-5.6';
+const DEFAULT_MODEL = 'gpt-5.6';
+
+/**
+ * A model name is shown in the browser, so it must never be able to carry a
+ * secret. Pasting a key into OPENAI_MODEL by mistake is easy and would
+ * otherwise publish it through /api/status; refuse anything key-shaped and
+ * fall back to the default instead.
+ */
+function configuredModel(): string {
+  const raw = (process.env.OPENAI_MODEL || '').trim();
+  if (!raw) return DEFAULT_MODEL;
+  if (/^sk-/.test(raw) || raw.length > 60 || !/^[A-Za-z0-9._-]+$/.test(raw)) {
+    console.warn('OPENAI_MODEL does not look like a model name; ignoring it.');
+    return DEFAULT_MODEL;
+  }
+  return raw;
+}
+
+export const MODEL = configuredModel();
 export const isConfigured = () => Boolean(process.env.OPENAI_API_KEY);
 
 const MAX_TOOL_ROUNDS = 6;
