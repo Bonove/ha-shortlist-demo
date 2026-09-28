@@ -18,7 +18,19 @@ const SNAPSHOT_DIR = join(process.cwd(), 'policies', 'snapshots');
 // See HA_DATA_DIR in src/lib/store/db.ts: tests point this at a scratch copy.
 const DATA_DIR = join(process.cwd(), process.env.HA_DATA_DIR || 'data');
 const STATE_FILE = join(DATA_DIR, 'policy-state.json');
-const DEFAULT_ACTIVE: SnapshotId = 'S0';
+/**
+ * What a fresh installation runs. S5 is the only bundle carrying all four
+ * specs, so anything earlier leaves three of the journey's moments with
+ * nothing to execute — and the deployed demo has an ephemeral filesystem, so
+ * every deploy starts here.
+ */
+const DEFAULT_ACTIVE: SnapshotId = 'S5';
+
+/**
+ * Where "restore to the baseline" goes. Deliberately not DEFAULT_ACTIVE: the
+ * S0–S4 policy walk starts from S0, and its restore has to return there.
+ */
+const BASELINE: SnapshotId = 'S0';
 
 export interface PolicyState {
   activeId: SnapshotId;
@@ -134,7 +146,7 @@ export function activate(id: SnapshotId): { activeId: SnapshotId; previousId: Sn
 
 export function restore(target: 'previous' | 'S0'): { activeId: SnapshotId; previousId: SnapshotId | null } {
   const state = readState();
-  return activate(target === 'S0' ? DEFAULT_ACTIVE : (state.previousId ?? DEFAULT_ACTIVE));
+  return activate(target === 'S0' ? BASELINE : (state.previousId ?? BASELINE));
 }
 
 /** Store an imported bundle. Only `bundle.ts` should call this. */
