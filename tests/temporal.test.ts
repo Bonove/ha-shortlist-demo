@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { evaluateListing } from '@/lib/lemma/engine';
+import { hashBundle } from '@/lib/policy/hash';
+import { getSnapshot } from '@/lib/policy/snapshots';
 import { SPEC_NAME } from '@/lib/contracts';
 
 /**
@@ -12,12 +13,10 @@ import { SPEC_NAME } from '@/lib/contracts';
  * Here nobody activates anything — moving the date is enough.
  */
 
-const files = [
-  {
-    path: 'shortlist_policy.lemma',
-    code: readFileSync('tests/fixtures/temporal-two-versions.lemma', 'utf8'),
-  },
-];
+// The captured S4 publication, not a local copy: these assertions are about
+// what LemmaBase actually serves.
+const snapshot = getSnapshot('S4');
+const files = snapshot.files;
 
 const TENANT = {
   intended_stay: '5 month',
@@ -34,6 +33,15 @@ const at = (effective: string, listing: keyof typeof LISTINGS) =>
   evaluateListing(files, { ...LISTINGS[listing], ...TENANT }, { spec: SPEC_NAME, effective });
 
 describe('temporal policy versions', () => {
+  it('is a captured publication carrying both dated versions', () => {
+    expect(hashBundle(files)).toBe(snapshot.sourceHash);
+    expect(snapshot.provenance).toBe('live-repository-read');
+    const headers = files[0].code.match(/^spec shortlist_policy .*$/gm) ?? [];
+    expect(headers).toEqual(['spec shortlist_policy 2026-01-01', 'spec shortlist_policy 2027-01-01']);
+    // The service exposed no revision for this publication, so none was stored.
+    expect(snapshot.publication?.revision).toBeUndefined();
+  });
+
   it('reads the 2026 version before the boundary', () => {
     const r = at('2026-12-31', 'A');
     expect(r.specEffectiveFrom).toBe('2026-01-01');

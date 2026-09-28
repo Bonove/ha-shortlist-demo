@@ -64,6 +64,7 @@ rule offer_fits:
   fits_monthly_budget and fits_initial_payment_budget
   and meets_minimum_stay
 
+
 spec shortlist_policy 2027-01-01
 """
 In force from 2027-01-01: the booking fee is abolished. The deposit cap and

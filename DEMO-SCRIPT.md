@@ -1,6 +1,7 @@
 # Three-minute demo script
 
-**S0 → S1 → S2 → S3 → restore.** Presentation mode on, window at 1440px.
+**S0 → S1 → S2 → S3 → S4 → restore.** Presentation mode on, window at 1440px.
+Allow about four minutes with the temporal chapter, three without it.
 
 Everything on screen is fictional demonstration data.
 
@@ -66,7 +67,25 @@ accept a five-month stay.
 C turns green. All three homes now fit. These are checks against Alex's stated
 requirements, not judgements about Alex.
 
-### 2:20 — Proof that nothing moves by itself (20s)
+### 2:10 — The rule that is already published but not yet in force (30s)
+
+In Rules Studio, activate **S4 — temporal fee change**. Nothing visible happens:
+the numbers stay A €2,300 · B €2,400 · C €2,200.
+
+Now find **Evaluation date** and press **1 Jan 2027**.
+
+Every initial payment drops by €100 — A €2,200 · B €2,300 · C €2,100 — and the
+card reads *Version in force: 2027-01-01*.
+
+**Say the point out loud:** nobody activated anything and no source changed.
+This one published bundle holds two dated versions of the same policy, and the
+date decided which one answered. That is how you announce a change before it
+applies, and how you still answer "what did the policy say that day?" a year
+later.
+
+Press **Today** to come back.
+
+### 2:40 — Proof that nothing moves by itself (20s)
 
 Still in Rules Studio, scroll to **LemmaBase connection** and press **Check
 against LemmaBase**.
@@ -78,7 +97,7 @@ ahead… Nothing switched by itself."*
 That is the whole governance argument in one screen: the policy can move without
 the runtime moving, and you can see the gap rather than discover it.
 
-### 2:40 — The audit view (20s)
+### 3:00 — The audit view (20s)
 
 Open **Change comparison**. Baseline plus every cumulative step, the real source
 diff between steps, every listing at every step, and the difference from both the
@@ -86,7 +105,7 @@ previous step and the baseline — all computed against one frozen input set.
 
 Note that inspecting a step here does **not** activate it.
 
-### 2:55 — Restore and close (15s)
+### 3:20 — Restore and close (15s)
 
 In Rules Studio, hit **Restore S0**. Everything returns to the baseline results.
 

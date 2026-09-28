@@ -27,8 +27,8 @@ const CAPTURED = readdirSync(SNAPSHOT_DIR, { withFileTypes: true })
   .sort();
 
 describe('2. the captured source on disk is the source the manifest published', () => {
-  it('there are four captured snapshots, S0–S3', () => {
-    expect(CAPTURED).toEqual(['S0', 'S1', 'S2', 'S3']);
+  it('there are five captured snapshots, S0–S4', () => {
+    expect(CAPTURED).toEqual(['S0', 'S1', 'S2', 'S3', 'S4']);
   });
 
   for (const id of CAPTURED) {
@@ -49,10 +49,17 @@ describe('2. the captured source on disk is the source the manifest published', 
       expect(snapshot.publication?.repository).toBe('@tristan-van-doorn/ha-shortlist-demo');
       expect(snapshot.publication?.spec).toBe('shortlist_policy');
       expect(snapshot.publication?.specEffectiveFrom).toBe('2026-01-01');
-      // A revision id and a retrieval instant, kept apart from the snapshot id.
-      expect(snapshot.publication?.revision).toMatch(/^[0-9a-f-]{20,}$/);
       expect(Date.parse(snapshot.publication!.retrievedAt)).not.toBeNaN();
-      expect(snapshot.publication?.revision).not.toBe(snapshot.id);
+      if (id === 'S4') {
+        // This publication went through a LemmaBase motion, which exposed no
+        // revision id. An absent one is recorded as absent; inventing a
+        // plausible-looking id would be the actual failure here.
+        expect(snapshot.publication?.revision).toBeUndefined();
+      } else {
+        // A revision id and a retrieval instant, kept apart from the snapshot id.
+        expect(snapshot.publication?.revision).toMatch(/^[0-9a-f-]{20,}$/);
+        expect(snapshot.publication?.revision).not.toBe(snapshot.id);
+      }
     });
   }
 

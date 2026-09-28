@@ -38,7 +38,9 @@ const manifest = {
     retrievedAt: new Date().toISOString(),
     message,
     specEffectiveFrom: '2026-01-01',
-    revision,
+    // Omitted when the service exposed none. Never invent one: an application
+    // snapshot id and a LemmaBase revision are different things.
+    ...(revision ? { revision } : {}),
   },
   capturedAt: new Date().toISOString(),
 };

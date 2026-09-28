@@ -69,6 +69,7 @@ not the draft that was sent to it.
 | S1 | S0 + booking fee reduced to €100 | `01a0c34e-733b-7d8a-9deb-0399e8f008c4` |
 | S2 | S1 + deposit capped at one month's rent | `01a0c34e-bceb-7e8e-b8f8-fd2a30262520` |
 | S3 | S2 + approved exception allowing five months for C | `01a0c34f-095e-7516-a8c5-ef5c39d4eaa4` |
+| S4 | S3 + a second dated version: no booking fee from 2027-01-01 | published via motion #5; no revision exposed |
 
 Expected results for the seeded scenario (5 months, max €1,200/month, max €2,500
 up front):
@@ -79,6 +80,29 @@ up front):
 | S1 | €3,400 | €2,400 | €2,200 | B |
 | S2 | €2,300 | €2,400 | €2,200 | A, B |
 | S3 | €2,300 | €2,400 | €2,200 | A, B, C |
+
+## Three axes, deliberately kept apart
+
+It is easy to collapse these into one idea. The prototype keeps them separate
+because they answer different questions, and the presenter bar shows all three.
+
+| Axis | Question | Who moves it |
+|---|---|---|
+| Snapshot (S0–S4) | Which published bundle does the runtime execute? | An operator activates one |
+| Scenario | What is the tenant's situation? | Tenant requirements and listing data |
+| Evaluation date | At which instant is the policy read? | Time, or the presenter's date control |
+
+The third is Lemma's temporal dimension. One published bundle can hold several
+dated versions of the same spec, and the evaluation date decides which answers.
+**S4** demonstrates it: the same bundle, unchanged and unactivated, gives
+
+| Read as of | Version in force | A | B | C |
+|---|---|---:|---:|---:|
+| 2026-12-31 | `2026-01-01` | €2,300 | €2,400 | €2,200 |
+| 2027-01-01 | `2027-01-01` | €2,200 | €2,300 | €2,100 |
+
+That is what snapshots cannot show: a change published before it applies, and
+an answer to "what did the policy say on that day?" long after.
 
 ## Editing a policy and getting it back into the app
 
@@ -108,11 +132,20 @@ snapshot still has to come back through MCP. The supported round trip is:
    ```
 5. **Retrieve** — read the published source back:
    ```
-   source(repository="@tristan-van-doorn/ha-shortlist-demo",
-          spec="shortlist_policy")
+   source(repository="@tristan-van-doorn/ha-shortlist-demo")
    ```
    Capture it immediately. The service can fetch by effective date, not by
    publication revision, so an older publication cannot be re-fetched later.
+
+   **Use the repository-wide form, without `spec`.** Passing `spec` returns only
+   the version in force at that instant, so a spec with several dated versions
+   silently loses all but one — the captured bundle would execute without the
+   future rule and nothing would look wrong. Only the repository-wide call
+   returns every slice.
+
+   A publication may also open a **motion** that has to be accepted in the
+   LemmaBase interface before it goes live, and an accepted motion exposes no
+   revision id. When the service gives none, the manifest records none.
 6. **Capture** — `node scripts/capture-snapshot.mjs <id> <step> <revision>
    "<label>" "<description>" "<message>" <retrieved-source-file>`
 7. **Import and activate** — import the bundle in Rules Studio. It is verified

@@ -100,15 +100,18 @@ The presenter bar therefore distinguishes three things that are easy to conflate
 credentials being present, a live read having succeeded this session, and the
 source the engine is actually executing. Only the last one decides results.
 
-## Policy changes versus scenario changes
-
-Two separate axes, never mixed:
+## Three axes, never mixed
 
 - **Policy** changes alter Lemma source and arrive as a new snapshot. Activating
   one is always explicit; a newer publication never silently replaces the active
   runtime policy.
 - **Scenario** changes alter evaluation inputs (budgets, intended stay, requested
   deposit, availability, missing information). They never touch policy source.
+- **The evaluation date** moves the instant the policy is read at. One published
+  bundle may hold several dated versions of the same spec, and the date decides
+  which one answers — no activation involved. Every assessment records the
+  version that was in force, so a result is always attributable to a specific
+  dated rule and not merely to a bundle.
 
 Cumulative policy comparisons run against a **frozen** input snapshot with its
 own `inputsHash`. If inputs change, the comparison is recomputed explicitly

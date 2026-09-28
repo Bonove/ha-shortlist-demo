@@ -1,0 +1,22 @@
+{
+  "id": "S4",
+  "label": "S4 — temporal fee change",
+  "description": "Adds a second dated version of the same spec: from 2027-01-01 the booking fee is abolished. The deposit cap and the Park Apartment exception carry over.",
+  "step": 4,
+  "files": [
+    {
+      "path": "shortlist_policy.lemma"
+    }
+  ],
+  "sourceHash": "sha256:c7fabd3266165778e158510fae18b3af468951db819ace93d61445c7a06e68e3",
+  "provenance": "live-repository-read",
+  "publication": {
+    "repository": "@tristan-van-doorn/ha-shortlist-demo",
+    "repositoryUrl": "https://lemmabase.com/@tristan-van-doorn/ha-shortlist-demo",
+    "spec": "shortlist_policy",
+    "retrievedAt": "2026-09-28T08:32:21.013Z",
+    "message": "S4: adds a 2027-01-01 temporal version abolishing the booking fee (published via LemmaBase motion #5)",
+    "specEffectiveFrom": "2026-01-01"
+  },
+  "capturedAt": "2026-09-28T08:32:21.013Z"
+}
