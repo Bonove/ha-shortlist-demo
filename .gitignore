@@ -7,3 +7,4 @@ data/*.json
 .next-verify
 *.tsbuildinfo
 data-test
+.next-prod

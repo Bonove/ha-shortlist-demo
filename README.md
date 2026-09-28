@@ -17,6 +17,10 @@ cp .env.example .env     # then paste your OPENAI_API_KEY into .env
 npm run dev              # http://localhost:3210
 ```
 
+Locally the app runs open. Set `DEMO_PASSWORD` to put the shared-password gate
+in front of it; a **production** server refuses to serve without one, because a
+missing variable is exactly how a public deployment ends up unprotected.
+
 The application runs entirely on the captured published snapshots in
 `policies/snapshots/`. It needs no connection to LemmaBase or Claude Code once
 those are in place; `LEMMABASE_API_KEY` is optional and only adds the read-only
@@ -125,3 +129,31 @@ policy the runtime is executing.
 - [`DEMO-SCRIPT.md`](DEMO-SCRIPT.md) — the three-minute walkthrough.
 - [`AGENT_BRIEF.md`](AGENT_BRIEF.md) — verified engine and language facts, the
   HTTP contract, and the build conventions.
+
+## Deploying
+
+A Render **web service** on the Node runtime — not a static site. The Lemma
+engine is a wasm module the server loads from `node_modules` at runtime, and
+every evaluation happens in a route handler.
+
+| Setting | Value |
+|---|---|
+| Build command | `npm install && npm run build` |
+| Start command | `npm start` |
+| Environment | `OPENAI_API_KEY`, `DEMO_PASSWORD`, optionally `LEMMABASE_API_KEY` |
+
+Two things to know before a presentation:
+
+**State does not survive a restart.** `data/session.json` and
+`data/policy-state.json` live on the instance's own disk, which Render replaces
+on every deploy and on wake from idle. The app comes back on the S0 baseline
+with an empty conversation. For a demo that is usually what you want; if it is
+not, attach a persistent disk mounted at `data/`.
+
+**A free instance sleeps after about fifteen minutes** and takes close to a
+minute to wake. Open the page a few minutes before presenting, or move to a
+paid instance.
+
+The password gate is a demo gate, not an identity system: one shared password,
+one cookie, no users. It exists because `/api/chat` spends real credit on every
+call and a public URL is a public URL.
