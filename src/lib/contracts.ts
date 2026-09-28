@@ -206,6 +206,12 @@ export interface Assessment {
   evaluatedAt: string;
   /** Effective instant handed to the engine. */
   effective: string;
+  /**
+   * Which dated version of the spec was in force at that instant.
+   * One published bundle can hold several; the evaluation date picks one, and
+   * nobody activates anything to make that happen.
+   */
+  specEffectiveFrom?: string;
 }
 
 /** Results for every listing at one snapshot, against one frozen scenario. */
@@ -272,6 +278,12 @@ export interface SessionState {
   applications: DemoApplication[];
   /** Latest assessment per listing reference. */
   assessments: Record<string, Assessment>;
+  /**
+   * The instant the policy is evaluated at, as an ISO date. null means now.
+   * A presentation control, not a tenant requirement: it moves the clock, not
+   * the policy source and not what Alex asked for.
+   */
+  evaluationDate: string | null;
 }
 
 /* ---------------------------------------------------------- presenter bar */
@@ -291,6 +303,8 @@ export interface SystemStatus {
     lastSyncAt: string | null;
   };
   demoData: { listings: number; tenant: string };
+  /** The instant policy is being read at, as an ISO date. null means now. */
+  evaluationDate: string | null;
   lastEvaluation: { evaluationId: string; at: string; snapshotId: SnapshotId } | null;
 }
 

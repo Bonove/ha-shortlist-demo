@@ -6,7 +6,7 @@ import {
   api,
   errText,
   shortHash,
-  when,
+  onDay, when,
 } from '@/components/studio/shared';
 import {
   setPresentationMode,
@@ -63,6 +63,7 @@ export function PresenterBar() {
   }, [open]);
 
   const connected = status?.lemmabase.mode === 'connected';
+  const evaluationDate = status?.evaluationDate ?? null;
 
   return (
     <div className="presenter" ref={box}>
@@ -107,6 +108,15 @@ export function PresenterBar() {
               <span className={`dot ${connected ? 'dot-ok' : 'dot-warn'}`} />
               {connected ? 'LemmaBase linked' : 'Stored snapshot'}
             </span>
+            {evaluationDate && (
+              <>
+                <span className="presenter-sep" />
+                <span className="presenter-chip">
+                  <span className="dot dot-warn" />
+                  as of <span className="mono">{evaluationDate}</span>
+                </span>
+              </>
+            )}
           </>
         )}
       </button>
@@ -215,6 +225,12 @@ function StatusPopover({
                 <div className="pop-line">
                   <span className="k">Source hash</span>
                   <span className="v mono">{shortHash(status.activeSnapshot.sourceHash)}</span>
+                </div>
+                <div className="pop-line">
+                  <span className="k">Read as of</span>
+                  <span className="v">
+                    {status.evaluationDate ? onDay(status.evaluationDate) : 'now'}
+                  </span>
                 </div>
               </>
             ) : (

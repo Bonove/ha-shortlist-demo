@@ -4,12 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   PolicyDraft,
   PolicySnapshot,
+  SessionState,
   SnapshotEvaluation,
   SnapshotId,
   ValidationResult,
 } from '@/lib/contracts';
 import { REPOSITORY, REPOSITORY_URL, SPEC_PATH } from '@/lib/contracts';
 import { STATUS_REFRESH_EVENT } from '@/components/presenter-bar';
+import { SESSION_CHANGED_EVENT } from '@/components/use-session';
 import {
   api,
   DiffView,
@@ -21,6 +23,7 @@ import {
   money,
   months,
   PROVENANCE_TEXT,
+  onDay,
   ProvenancePill,
   shortHash,
   snapshotTitle,
@@ -297,6 +300,8 @@ export function RulesStudio() {
               window.dispatchEvent(new Event(STATUS_REFRESH_EVENT));
             }}
           />
+
+          <EvaluationDateCard />
 
           <HandoffCard />
         </div>
@@ -968,6 +973,103 @@ function TransferCard({
             ) : null}
           </div>
         ) : null}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * The evaluation date — the third axis, and the one that is easiest to confuse
+ * with the other two.
+ *
+ * Activating a snapshot changes WHICH published bundle runs. Scenario controls
+ * change the tenant's situation. This changes neither: it moves the instant the
+ * policy is read at, and a bundle that holds several dated versions of the same
+ * spec will answer differently on either side of a boundary. Nobody activates
+ * anything; time does the switching.
+ */
+function EvaluationDateCard() {
+  const [date, setDate] = useState<string | null>(null);
+  const [inForce, setInForce] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const read = useCallback(async () => {
+    try {
+      const { session } = await api<{ session: SessionState }>('/api/session');
+      setDate(session.evaluationDate);
+      const any = Object.values(session.assessments)[0];
+      setInForce(any?.specEffectiveFrom ?? null);
+    } catch {
+      /* the page already reports a dead harness */
+    }
+  }, []);
+
+  useEffect(() => {
+    void read();
+  }, [read]);
+
+  async function apply(value: string | null) {
+    setBusy(true);
+    setErr(null);
+    try {
+      await api('/api/scenario', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ evaluationDate: value }),
+      });
+      await read();
+      window.dispatchEvent(new Event(STATUS_REFRESH_EVENT));
+      window.dispatchEvent(new CustomEvent(SESSION_CHANGED_EVENT));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h2>Evaluation date</h2>
+      </div>
+      <div className="card-pad stack-sm">
+        <p className="muted" style={{ fontSize: 12, lineHeight: 1.6 }}>
+          A published policy can hold several dated versions of the same spec. This picks the instant they are read
+          at, so a change can be published before it applies — and what applied on a given day stays answerable
+          afterwards. It changes no source and activates nothing.
+        </p>
+
+        <div className="row wrap" style={{ gap: 8 }}>
+          <input
+            type="date"
+            className="input"
+            style={{ width: 170 }}
+            value={date ?? ''}
+            disabled={busy}
+            onChange={(e) => void apply(e.target.value || null)}
+          />
+          <button className="btn btn-sm" disabled={busy || !date} onClick={() => void apply(null)}>
+            Today
+          </button>
+          <button className="btn btn-sm" disabled={busy} onClick={() => void apply('2026-12-31')}>
+            31 Dec 2026
+          </button>
+          <button className="btn btn-sm" disabled={busy} onClick={() => void apply('2027-01-01')}>
+            1 Jan 2027
+          </button>
+        </div>
+
+        {err && <ErrorNote error={err} onRetry={() => void read()} />}
+
+        <div className="pop-line">
+          <span className="k">Reading policy as of</span>
+          <span className="v">{date ? onDay(date) : 'now'}</span>
+        </div>
+        <div className="pop-line">
+          <span className="k">Version in force</span>
+          <span className="v mono">{inForce ?? 'not evaluated yet'}</span>
+        </div>
       </div>
     </section>
   );

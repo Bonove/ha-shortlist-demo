@@ -37,6 +37,7 @@ export async function getStatus(): Promise<SystemStatus> {
       lastSyncAt: liveRead ?? active?.publication?.retrievedAt ?? null,
     },
     demoData: { listings: session.listings.length, tenant: session.tenant.name },
+    evaluationDate: session.evaluationDate,
     lastEvaluation: last
       ? { evaluationId: last.evaluationId, at: last.evaluatedAt, snapshotId: last.snapshotId }
       : null,

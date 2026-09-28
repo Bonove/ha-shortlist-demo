@@ -27,6 +27,7 @@ export function seedSession(): SessionState {
     events: [],
     applications: [],
     assessments: {},
+    evaluationDate: null,
   };
 }
 

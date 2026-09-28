@@ -41,10 +41,12 @@ export function assess(
   tenant: TenantProfile,
   listing: Listing,
   snapshot: PolicySnapshot,
+  /** ISO date to evaluate at. Undefined means now. */
+  effective?: string,
 ): Assessment {
   let assessment: Assessment;
   try {
-    assessment = assessListing({ snapshot, tenant, listing, explain: true });
+    assessment = assessListing({ snapshot, tenant, listing, explain: true, effective });
     engineFlag.__haEngineOk = true;
   } catch (error) {
     // An engine failure is shown, never smoothed over into a zero or a "no".
@@ -112,15 +114,16 @@ const applied = new Map<string, number>();
 
 export async function evaluateListings(references?: string[]): Promise<Assessment[]> {
   const snapshot = getActiveSnapshot();
-  const { tenant, listings } = await readDoc((d) => ({
+  const { tenant, listings, evaluationDate } = await readDoc((d) => ({
     tenant: d.session.tenant,
     listings: d.session.listings,
+    evaluationDate: d.session.evaluationDate,
   }));
   const targets = references?.length
     ? listings.filter((l) => references.includes(l.reference))
     : listings;
   const seq = ++issued;
-  const assessments = targets.map((l) => assess(tenant, l, snapshot));
+  const assessments = targets.map((l) => assess(tenant, l, snapshot, evaluationDate ?? undefined));
 
   await transact((doc) => {
     for (const a of assessments) {

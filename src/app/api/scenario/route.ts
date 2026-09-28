@@ -29,6 +29,14 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const tenantPatch: Partial<TenantProfile> | undefined = body?.tenant;
   const listingPatch: { reference: string; patch: Partial<Listing> } | undefined = body?.listing;
+  // A presentation control, not a tenant requirement: it moves the clock the
+  // policy is read at, and one published bundle can answer differently on
+  // either side of a dated version boundary.
+  const hasDate = body !== null && typeof body === 'object' && 'evaluationDate' in body;
+  const rawDate: unknown = body?.evaluationDate;
+  if (hasDate && rawDate !== null && !(typeof rawDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(rawDate))) {
+    return NextResponse.json({ error: '"evaluationDate" must be YYYY-MM-DD, or null for now.' }, { status: 400 });
+  }
 
   const changed = await transact((doc) => {
     const notes: string[] = [];
@@ -47,6 +55,13 @@ export async function POST(request: Request) {
           patch: listingPatch.patch,
         });
       }
+    }
+    if (hasDate) {
+      doc.session.evaluationDate = (rawDate as string | null) ?? null;
+      notes.push(doc.session.evaluationDate ? `evaluation date ${doc.session.evaluationDate}` : 'evaluation date reset to now');
+      appendEvent(doc.session, 'scenario.changed', `Evaluating as of ${doc.session.evaluationDate ?? 'now'}`, {
+        evaluationDate: doc.session.evaluationDate,
+      });
     }
     // Every stored assessment is now stale: drop them rather than show old money.
     if (notes.length) doc.session.assessments = {};

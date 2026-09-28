@@ -154,6 +154,7 @@ export function toAssessment(args: {
     sourceHash: snapshot.sourceHash,
     evaluatedAt: new Date().toISOString(),
     effective: evaluation.effective,
+    specEffectiveFrom: evaluation.specEffectiveFrom,
   };
 }
 

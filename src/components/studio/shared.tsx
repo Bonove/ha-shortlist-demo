@@ -84,6 +84,14 @@ export function snapshotTitle(id: string, label: string): string {
   return label.startsWith(id) ? label : `${id} — ${label}`;
 }
 
+/** Date only — for an evaluation date, a time of day is noise. */
+export function onDay(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
 export function when(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso);
