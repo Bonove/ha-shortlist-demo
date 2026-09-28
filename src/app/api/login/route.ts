@@ -4,6 +4,18 @@ import { GATE_COOKIE, gateToken, secretsMatch } from '@/lib/gate';
 export const runtime = 'nodejs';
 
 /**
+ * A relative Location, which RFC 7231 allows and every browser resolves
+ * against the address bar.
+ *
+ * Behind a reverse proxy `request.url` is the internal origin the proxy dialled
+ * — on Render that is http://localhost:10000 — so building an absolute URL from
+ * it sends the browser somewhere that does not exist. Staying relative means
+ * there is no host to get wrong.
+ */
+const redirectTo = (location: string) =>
+  new NextResponse(null, { status: 303, headers: { location } });
+
+/**
  * A slow, per-address throttle on guesses.
  *
  * The source is public and the gate is one shared password, so the only thing
@@ -45,13 +57,13 @@ export async function POST(request: Request) {
   const next = String(form.get('next') ?? '/');
 
   if (!secretsMatch(given, password)) {
-    // Relative redirect back to the form; the message is deliberately vague.
-    return NextResponse.redirect(new URL(`/login?error=1&next=${encodeURIComponent(next)}`, request.url), 303);
+    // The message is deliberately vague about which half was wrong.
+    return redirectTo(`/login?error=1&next=${encodeURIComponent(next)}`);
   }
 
   // Only ever redirect within this app, never to a URL an attacker supplied.
   const target = next.startsWith('/') && !next.startsWith('//') ? next : '/';
-  const response = NextResponse.redirect(new URL(target, request.url), 303);
+  const response = redirectTo(target);
   response.cookies.set(GATE_COOKIE, await gateToken(password), {
     httpOnly: true,
     sameSite: 'lax',

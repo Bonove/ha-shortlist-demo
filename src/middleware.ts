@@ -28,9 +28,15 @@ export async function middleware(request: NextRequest) {
   if (path.startsWith('/api/')) {
     return NextResponse.json({ error: 'Not signed in.' }, { status: 401 });
   }
-  const login = new URL('/login', request.url);
-  login.searchParams.set('next', path);
-  return NextResponse.redirect(login);
+  // A rewrite, not a redirect. Behind a reverse proxy the request's own origin
+  // is the internal one Render dialled (http://localhost:10000), so any
+  // absolute redirect built from it sends the browser nowhere. A rewrite is
+  // resolved server-side, so that origin never reaches the browser — and the
+  // visitor keeps the address they asked for.
+  const login = request.nextUrl.clone();
+  login.pathname = '/login';
+  login.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
+  return NextResponse.rewrite(login);
 }
 
 export const config = {
