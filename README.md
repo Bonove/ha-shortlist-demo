@@ -4,7 +4,7 @@ A clickable prototype showing an **agent harness** that coordinates a live AI
 assistant, shared tenant context, demonstration listing data and a **real local
 Lemma engine** executing policy source published to LemmaBase.
 
-Scenario: *from search overload to a trusted shortlist.*
+Scenario: *one tenant, four decision moments, one engine.*
 
 > All listings, prices and policies here are fictional demonstration data. They
 > do not describe HousingAnywhere policy, pricing or Dutch law.
@@ -32,6 +32,29 @@ npm test                          # the real-engine verification suite
 node scripts/verify-snapshots.mjs # fixture check straight from published source
 ```
 
+## The journey spine
+
+Alex takes Canal Studio out of the shortlist and then keeps meeting the same
+kind of question in different clothes. Each moment is one of the service
+missions, and each is answered by its own Lemma spec.
+
+| Moment | Mission | The question it answers | Spec |
+|---|---|---|---|
+| Shortlist | 00 — from search overload to a trusted shortlist | Which of these homes fits what Alex can actually carry? | `shortlist_policy` |
+| Contract | 02 — from booking first, contract later to one clear commitment | May this contract be signed as it is offered? | `contract_check` |
+| Renewal | 06 — renewal becomes a proactive decision moment | May this renewal offer be made, and at what rent? | `renewal_policy` |
+| Deposit | 07 — from move-out to the next trusted move-in | What may be withheld from the deposit, and what goes back? | `deposit_settlement` |
+
+All four specs are published to the same repository and captured into the same
+bundle, so one activation moves every moment at once and one source hash covers
+all four. The shortlist keeps its own evaluator because it runs three listings
+against one set of requirements; the other three each run one set of facts
+through one spec.
+
+A moment can also come back with no answer. That is not a refusal and not a
+"no": it means the published policy does not cover the case, and the engine says
+so rather than guessing.
+
 ## The three views
 
 - **Tenant experience** — the assistant, Alex's confirmed requirements, the
@@ -47,13 +70,17 @@ node scripts/verify-snapshots.mjs # fixture check straight from published source
 
 ## The policy
 
-Repository: **`@tristan-van-doorn/ha-shortlist-demo`** (private)
-Spec: `shortlist_policy`, effective `2026-01-01`, one file
-`shortlist_policy.lemma`.
+Repository: **`@tristan-van-doorn/ha-shortlist-demo`** (private).
 
-Named rules: `booking_fee`, `effective_deposit`, `initial_payment`,
+`shortlist_policy`, effective `2026-01-01`, in `shortlist_policy.lemma`. Named
+rules: `booking_fee`, `effective_deposit`, `initial_payment`,
 `effective_minimum_stay`, `fits_monthly_budget`, `fits_initial_payment_budget`,
 `meets_minimum_stay`, `offer_fits`.
+
+The three later moments each add a spec to the same bundle, each with one
+headline rule: `contract_check` answers `contract_may_be_signed`,
+`renewal_policy` answers `renewal_offer_permitted`, and `deposit_settlement`
+answers `claim_upheld_in_full` alongside the amounts that go with it.
 
 For this demonstration, **initial payment = first month's rent + deposit +
 booking fee**.
@@ -70,6 +97,12 @@ not the draft that was sent to it.
 | S2 | S1 + deposit capped at one month's rent | `01a0c34e-bceb-7e8e-b8f8-fd2a30262520` |
 | S3 | S2 + approved exception allowing five months for C | `01a0c34f-095e-7516-a8c5-ef5c39d4eaa4` |
 | S4 | S3 + a second dated version: no booking fee from 2027-01-01 | published via motion #5; no revision exposed |
+| S5 | S4 + the three journey specs in the same bundle | published via motion #6; no revision exposed |
+
+S5 is the bundle the journey runs on, and the only one that carries all four
+specs. The S0–S3 walk changes the shortlist and leaves the other three moments
+with nothing to execute, so activating S0 is the first step of the policy-walk
+chapter rather than the resting state.
 
 Expected results for the seeded scenario (5 months, max €1,200/month, max €2,500
 up front):
@@ -88,7 +121,7 @@ because they answer different questions, and the presenter bar shows all three.
 
 | Axis | Question | Who moves it |
 |---|---|---|
-| Snapshot (S0–S4) | Which published bundle does the runtime execute? | An operator activates one |
+| Snapshot (S0–S5) | Which published bundle does the runtime execute? | An operator activates one |
 | Scenario | What is the tenant's situation? | Tenant requirements and listing data |
 | Evaluation date | At which instant is the policy read? | Time, or the presenter's date control |
 
@@ -159,7 +192,8 @@ policy the runtime is executing.
 
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — the harness, where enforcement lives,
   and the three identities that are never interchangeable.
-- [`DEMO-SCRIPT.md`](DEMO-SCRIPT.md) — the three-minute walkthrough.
+- [`DEMO-SCRIPT.md`](DEMO-SCRIPT.md) — the five-minute walk around the journey,
+  and the separate policy walk from S0 to S4.
 - [`AGENT_BRIEF.md`](AGENT_BRIEF.md) — verified engine and language facts, the
   HTTP contract, and the build conventions.
 

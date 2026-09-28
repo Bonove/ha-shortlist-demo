@@ -357,9 +357,12 @@ function IdentityCard({ active, loading }: { active: PolicySnapshot | null; load
                 </div>
               </div>
               <div className="identity">
-                <span className="eyebrow">Lemma effective date</span>
-                <div className="val">{active.publication?.specEffectiveFrom ?? '—'}</div>
-                <div className="note">The temporal spec version declared inside the source header.</div>
+                <span className="eyebrow">Specs in this bundle</span>
+                <div className="val mono">{active.publication?.specs?.join(', ') ?? '—'}</div>
+                <div className="note">
+                  One publication, several specs. Which dated version of one applies is a property of an
+                  evaluation, not of the bundle, so it is reported per run rather than here.
+                </div>
               </div>
             </div>
 

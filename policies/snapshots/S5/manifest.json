@@ -1,0 +1,26 @@
+{
+  "id": "S5",
+  "label": "S5 — the journey bundle",
+  "description": "One publication carrying all four specs: the shortlist, the contract check, the renewal cap with its 2027 version, and the deposit settlement.",
+  "step": 5,
+  "files": [
+    {
+      "path": "ha-shortlist-demo.lemma"
+    }
+  ],
+  "sourceHash": "sha256:b1bdf247a967995ce7cbb8db9e3aee4530c05fd01733fcaaa10fc5f96ff574c9",
+  "provenance": "live-repository-read",
+  "publication": {
+    "repository": "@tristan-van-doorn/ha-shortlist-demo",
+    "repositoryUrl": "https://lemmabase.com/@tristan-van-doorn/ha-shortlist-demo",
+    "specs": [
+      "contract_check",
+      "deposit_settlement",
+      "renewal_policy",
+      "shortlist_policy"
+    ],
+    "retrievedAt": "2026-09-28T14:09:13.865Z",
+    "message": "S5: adds contract_check, renewal_policy and deposit_settlement alongside shortlist_policy (published via LemmaBase motion #6)"
+  },
+  "capturedAt": "2026-09-28T14:09:13.866Z"
+}

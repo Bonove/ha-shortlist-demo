@@ -26,9 +26,12 @@ const CAPTURED = readdirSync(SNAPSHOT_DIR, { withFileTypes: true })
   .map((d) => d.name)
   .sort();
 
+/** A motion-based publication exposes no revision id, so none is recorded. */
+const PUBLISHED_VIA_MOTION = new Set(['S4', 'S5']);
+
 describe('2. the captured source on disk is the source the manifest published', () => {
-  it('there are five captured snapshots, S0–S4', () => {
-    expect(CAPTURED).toEqual(['S0', 'S1', 'S2', 'S3', 'S4']);
+  it('there are six captured snapshots, S0–S5', () => {
+    expect(CAPTURED).toEqual(['S0', 'S1', 'S2', 'S3', 'S4', 'S5']);
   });
 
   for (const id of CAPTURED) {
@@ -43,15 +46,26 @@ describe('2. the captured source on disk is the source the manifest published', 
       expect(hashBundle(files), `${id} source has drifted from its manifest`).toBe(manifest.sourceHash);
     });
 
-    it(`${id}: the publication record names the repository, spec and revision it came from`, () => {
+    it(`${id}: the publication record names the repository, specs and revision it came from`, () => {
       const snapshot = getSnapshot(id);
       expect(snapshot.provenance).toBe('live-repository-read');
       expect(snapshot.publication?.repository).toBe('@tristan-van-doorn/ha-shortlist-demo');
-      expect(snapshot.publication?.spec).toBe('shortlist_policy');
-      expect(snapshot.publication?.specEffectiveFrom).toBe('2026-01-01');
+      // Every spec the retrieved bundle holds. A dated version inside one of
+      // them is not recorded here: which version applied belongs to a run.
+      expect(snapshot.publication?.specs).toContain('shortlist_policy');
+      if (id === 'S5') {
+        // One publication, four specs: the journey runs out of a single bundle,
+        // so one activation moves every moment at once.
+        expect(snapshot.publication?.specs).toEqual([
+          'contract_check',
+          'deposit_settlement',
+          'renewal_policy',
+          'shortlist_policy',
+        ]);
+      }
       expect(Date.parse(snapshot.publication!.retrievedAt)).not.toBeNaN();
-      if (id === 'S4') {
-        // This publication went through a LemmaBase motion, which exposed no
+      if (PUBLISHED_VIA_MOTION.has(id)) {
+        // These publications went through a LemmaBase motion, which exposes no
         // revision id. An absent one is recorded as absent; inventing a
         // plausible-looking id would be the actual failure here.
         expect(snapshot.publication?.revision).toBeUndefined();

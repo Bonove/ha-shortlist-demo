@@ -86,7 +86,10 @@ export function readState(): PolicyState {
 export function writeState(state: PolicyState): void {
   mkdirSync(DATA_DIR, { recursive: true });
   // Write-then-rename so a crash mid-write cannot leave a half-written pointer.
-  const tmp = `${STATE_FILE}.tmp`;
+  // The pid is in the name because readState() writes on first read: without it
+  // two processes starting together race for one temp file and the loser's
+  // rename fails with ENOENT on a file the winner has already moved.
+  const tmp = `${STATE_FILE}.${process.pid}.tmp`;
   writeFileSync(tmp, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
   renameSync(tmp, STATE_FILE);
 }

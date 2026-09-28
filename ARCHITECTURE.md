@@ -47,6 +47,7 @@ inside it, not the thing itself.
 | LemmaBase | Authoring, validation and publication of shared policies |
 | `policies/snapshots/` | Preserving the exact published source selected for the demo |
 | `src/lib/lemma/` | Executing that source against scenario inputs |
+| `src/lib/journey/` | Defining what each moment asks and how its answer reads |
 | `src/lib/harness/` | Coordinating context, tools, evaluations and workflow |
 | `src/lib/ai/` | Understanding requests and explaining returned results |
 | `src/app/` | Displaying the journey and cumulative policy impacts |
@@ -66,6 +67,43 @@ enforcement; the absence of the tool is.
 `POST /api/application` re-runs that evaluation server-side against current data
 and the active snapshot before it will create a local demonstration record, and
 refuses with `409` when the fresh result does not fit.
+
+## How a moment is evaluated
+
+The contract, the renewal and the deposit settlement go down one path:
+
+```
+journey facts ─► momentInput() ─► runSpec(active snapshot files) ─► MomentOutcome
+```
+
+`momentInput()` in `src/lib/journey/moments.ts` turns the stored facts into the
+names and units the spec declares — amounts carry their unit in the value, never
+in the field name, because that is how Lemma reads them. `runSpec` executes the
+active snapshot's files at the session's evaluation date. What comes back is a
+`MomentOutcome`: the headline decision, the lines the moment shows, a summary
+assembled only from values the engine returned, the exact inputs, and the
+provenance — snapshot id, source hash, the instant it ran, the instant it was
+read at and the dated spec version that answered.
+
+`src/lib/harness/journey.ts` is that path's single enforcement point, as
+`evaluate.ts` is for listings. It validates a fact change at the boundary,
+persists each outcome under its moment, and drops a stored outcome the moment
+its facts change — an outcome produced from facts that no longer hold is not
+merely stale, it is wrong beside the inputs now on screen. An engine failure is
+persisted as a vetoed decision, never as a zero or a no.
+
+The shortlist deliberately keeps its own evaluator in `src/lib/lemma/assess.ts`
+and `src/lib/harness/evaluate.ts`. It is not the odd one out for historical
+reasons: it evaluates three listings against one set of requirements and carries
+the harness's own availability veto, where the other three each run one set of
+facts through one spec. Forcing them together would have hidden that difference
+rather than removed it.
+
+Three rules survive in both paths. Nothing outside these two enforcement points
+may produce a verdict; a vetoed rule is not a `false`; and no figure may be
+quoted without the snapshot and source hash it came from. The assistant's
+`get_journey_facts`, `evaluate_moment` and `explain_moment` read and run; like
+every other tool it has, none of them writes policy or sets an outcome.
 
 ## Three identities that are never interchangeable
 

@@ -2,6 +2,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import type { ScenarioSnapshot, SessionState } from '@/lib/contracts';
+import { seedJourney } from '@/lib/domain/journey';
 import { seedListings } from '@/lib/domain/listings';
 import { seedTenant } from '@/lib/domain/tenant';
 
@@ -28,6 +29,7 @@ export function seedSession(): SessionState {
     applications: [],
     assessments: {},
     evaluationDate: null,
+    journey: { facts: seedJourney(), outcomes: {} },
   };
 }
 
@@ -36,7 +38,11 @@ let cache: HarnessDoc | null = null;
 async function load(): Promise<HarnessDoc> {
   if (cache) return cache;
   try {
-    cache = JSON.parse(await readFile(FILE, 'utf8')) as HarnessDoc;
+    const doc = JSON.parse(await readFile(FILE, 'utf8')) as HarnessDoc;
+    // Sessions written before the journey spine existed have no `journey` key,
+    // and a presentation must survive its own state file rather than crash on it.
+    doc.session.journey ??= { facts: seedJourney(), outcomes: {} };
+    cache = doc;
   } catch {
     cache = { session: seedSession(), scenario: null };
   }

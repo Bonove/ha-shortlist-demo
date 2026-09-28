@@ -13,10 +13,11 @@
   "publication": {
     "repository": "@tristan-van-doorn/ha-shortlist-demo",
     "repositoryUrl": "https://lemmabase.com/@tristan-van-doorn/ha-shortlist-demo",
-    "spec": "shortlist_policy",
+    "specs": [
+      "shortlist_policy"
+    ],
     "retrievedAt": "2026-09-28T08:32:21.013Z",
-    "message": "S4: adds a 2027-01-01 temporal version abolishing the booking fee (published via LemmaBase motion #5)",
-    "specEffectiveFrom": "2026-01-01"
+    "message": "S4: adds a 2027-01-01 temporal version abolishing the booking fee (published via LemmaBase motion #5)"
   },
   "capturedAt": "2026-09-28T08:32:21.013Z"
 }

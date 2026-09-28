@@ -1,0 +1,38 @@
+/* Journey spine — only the classes globals.css, tenant.css and studio.css do
+   not already provide. */
+
+/* ------------------------------------------------------------------ rail */
+
+.journey-rail { display: flex; align-items: stretch; gap: 10px; }
+.journey-rail .step-btn { flex: 1 1 0; min-width: 0; }
+
+.journey-step-head { display: flex; align-items: baseline; gap: 8px; }
+.journey-step-num { font-family: var(--mono); font-size: 12px; font-weight: 700; }
+.journey-step-phase {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.journey-step-title { display: block; margin-top: 6px; font-size: 13px; font-weight: 600; line-height: 1.4; }
+
+/* The four moments only sit side by side at the presentation width. Narrower,
+   the rail scrolls the way the app bar does, rather than reflowing into a
+   column — the order is the point, and wrapping hides it. */
+@media (max-width: 1100px) {
+  .journey-rail { overflow-x: auto; scrollbar-width: none; }
+  .journey-rail::-webkit-scrollbar { display: none; }
+  .journey-rail .step-btn { flex: 0 0 236px; }
+}
+
+/* ---------------------------------------------------------------- moment */
+
+.journey-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 18px;
+  align-items: start;
+}
+.journey-facts { position: sticky; top: 84px; }
+
+@media (max-width: 1180px) {
+  .journey-grid { grid-template-columns: minmax(0, 1fr); }
+  .journey-facts { position: static; }
+}

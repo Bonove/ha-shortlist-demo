@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateListing } from '@/lib/lemma/engine';
+import { runSpec } from '@/lib/lemma/engine';
 import { hashBundle } from '@/lib/policy/hash';
 import { getSnapshot } from '@/lib/policy/snapshots';
 import { SPEC_NAME } from '@/lib/contracts';
@@ -30,7 +30,7 @@ const LISTINGS = {
 };
 
 const at = (effective: string, listing: keyof typeof LISTINGS) =>
-  evaluateListing(files, { ...LISTINGS[listing], ...TENANT }, { spec: SPEC_NAME, effective });
+  runSpec(files, { ...LISTINGS[listing], ...TENANT }, { spec: SPEC_NAME, effective });
 
 describe('temporal policy versions', () => {
   it('is a captured publication carrying both dated versions', () => {

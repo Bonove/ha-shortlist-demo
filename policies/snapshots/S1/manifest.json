@@ -13,10 +13,11 @@
   "publication": {
     "repository": "@tristan-van-doorn/ha-shortlist-demo",
     "repositoryUrl": "https://lemmabase.com/@tristan-van-doorn/ha-shortlist-demo",
-    "spec": "shortlist_policy",
+    "specs": [
+      "shortlist_policy"
+    ],
     "retrievedAt": "2026-09-21T09:31:43.881Z",
     "message": "S1: booking fee reduced from 150 eur to 100 eur",
-    "specEffectiveFrom": "2026-01-01",
     "revision": "01a0c34e-733b-7d8a-9deb-0399e8f008c4"
   },
   "capturedAt": "2026-09-21T09:31:43.881Z"

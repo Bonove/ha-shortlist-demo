@@ -154,7 +154,8 @@ export function WhyPanel({
             <Row k="Source hash" v={assessment.sourceHash} />
             <Row k="LemmaBase repository" v={pub?.repository ?? status?.lemmabase.repository ?? null} />
             <Row k="Publication revision" v={pub?.revision ?? null} />
-            <Row k="Spec effective from" v={pub?.specEffectiveFrom ?? null} />
+            <Row k="Specs in the bundle" v={pub?.specs?.join(', ') ?? null} />
+            <Row k="Spec version in force" v={assessment.specEffectiveFrom ?? null} />
             <Row k="Source retrieved at" v={pub?.retrievedAt ?? null} />
             <Row k="Provenance" v={snapshot?.provenance ?? null} />
             <Row k="Evaluated at" v={assessment.evaluatedAt} />

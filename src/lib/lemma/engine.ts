@@ -156,10 +156,10 @@ function normalise(result: RuleResult): LemmaRuleResult {
 }
 
 /**
- * Run a bundle against one set of inputs. Throws `LemmaEngineError` rather than
+ * Run one spec from a bundle against one set of inputs. Throws `LemmaEngineError` rather than
  * returning a partial result — a failed evaluation must be visible, never a zero.
  */
-export function evaluateListing(
+export function runSpec(
   files: PolicySourceFile[],
   input: Record<string, unknown>,
   opts: { spec: string; effective?: string; rules?: string[]; explain?: boolean } = { spec: 'shortlist_policy' },

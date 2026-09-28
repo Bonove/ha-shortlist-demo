@@ -8,9 +8,11 @@
  */
 
 import type OpenAI from 'openai';
-import type { Assessment, TenantProfile } from '@/lib/contracts';
+import type { Assessment, MomentOutcome, TenantProfile } from '@/lib/contracts';
 import { readSession, updateSession } from '@/lib/store/db';
 import { evaluateListings } from '@/lib/harness/evaluate';
+import { runMoment } from '@/lib/harness/journey';
+import { isRunnableMoment, momentById, type RunnableMomentId } from '@/lib/journey/moments';
 import { getActiveSnapshot } from '@/lib/policy/snapshots';
 
 /** Ranges the demo will accept. Outside these we ask rather than guess. */
@@ -23,6 +25,20 @@ const NUMERIC: Record<string, { min: number; max: number; label: string }> = {
 const noInput = {
   type: 'object',
   properties: {},
+  additionalProperties: false,
+};
+
+/** The shortlist is absent on purpose: it has its own tools above. */
+const momentParameter = {
+  type: 'object',
+  properties: {
+    moment: {
+      type: 'string',
+      enum: ['contract', 'renewal', 'deposit'],
+      description: 'Which decision moment of the tenancy to run.',
+    },
+  },
+  required: ['moment'],
   additionalProperties: false,
 };
 
@@ -102,6 +118,30 @@ export const TOOL_DEFINITIONS: OpenAI.Responses.Tool[] = [
       'Read the policy snapshot currently in force: its id, label, description, source hash and publication metadata.',
     parameters: noInput,
   },
+  {
+    type: 'function',
+    strict: false,
+    name: 'get_journey_facts',
+    description:
+      "Read the facts of Alex's tenancy that the later moments are decided on: the contract as offered, the renewal being proposed and the landlord's deposit claim. These are facts, never a verdict: to say whether anything is permitted, or what it costs, you must call evaluate_moment.",
+    parameters: noInput,
+  },
+  {
+    type: 'function',
+    strict: false,
+    name: 'evaluate_moment',
+    description:
+      "Run one moment of the tenancy through the published policy using the real rules engine: the contract check, the renewal offer or the deposit settlement. This is the only source of the figures and the verdict for that moment. A moment can also come back with no answer, which means the policy does not cover the case and is not the same as a no.",
+    parameters: momentParameter,
+  },
+  {
+    type: 'function',
+    strict: false,
+    name: 'explain_moment',
+    description:
+      'Explain one stored moment outcome: every rule the engine returned, the plain-language summary, the facts it ran on, and which policy snapshot and dated spec version produced it.',
+    parameters: momentParameter,
+  },
 ];
 
 /** `raw` is the whole engine response; it is provenance, not conversation. */
@@ -116,6 +156,32 @@ const forModel = (a: Assessment) => ({
   sourceHash: a.sourceHash,
   evaluatedAt: a.evaluatedAt,
 });
+
+/** Same discipline for a moment: `raw` is provenance, not conversation. */
+const momentForModel = (o: MomentOutcome) => ({
+  moment: o.moment,
+  spec: o.spec,
+  decision: o.decision,
+  lines: o.lines,
+  summary: o.summary,
+  inputs: o.inputs,
+  snapshotId: o.snapshotId,
+  sourceHash: o.sourceHash,
+  evaluatedAt: o.evaluatedAt,
+  effective: o.effective,
+  specEffectiveFrom: o.specEffectiveFrom,
+});
+
+/** Rejects an unknown moment with words the model can act on, not a throw. */
+function requireMoment(input: Record<string, unknown>): RunnableMomentId | { error: string } {
+  const moment = typeof input.moment === 'string' ? input.moment : '';
+  if (!isRunnableMoment(moment)) {
+    return {
+      error: `"${moment}" is not a moment this tool can run. Use "contract", "renewal" or "deposit". The shortlist is evaluated with evaluate_listings instead.`,
+    };
+  }
+  return moment;
+}
 
 const handlers: Record<string, (input: Record<string, unknown>) => Promise<unknown>> = {
   async get_tenant_profile() {
@@ -232,6 +298,60 @@ const handlers: Record<string, (input: Record<string, unknown>) => Promise<unkno
       capturedAt: s.capturedAt,
       publication: s.publication ?? null,
       note: 'The application runs from this stored published snapshot. It cannot change policy.',
+    };
+  },
+
+  async get_journey_facts() {
+    const { journey } = await readSession();
+    return {
+      note: "The facts of Alex's tenancy as they currently stand. They are what the engine is given, not what it concluded: no figure here is a permitted amount and no field here is a verdict.",
+      facts: journey.facts,
+    };
+  },
+
+  async evaluate_moment(input) {
+    const moment = requireMoment(input);
+    if (typeof moment !== 'string') return moment;
+    const outcome = await runMoment(moment);
+    const snapshot = await getActiveSnapshot();
+    return {
+      snapshot: { id: snapshot.id, label: snapshot.label, sourceHash: snapshot.sourceHash },
+      outcome: momentForModel(outcome),
+    };
+  },
+
+  async explain_moment(input) {
+    const moment = requireMoment(input);
+    if (typeof moment !== 'string') return moment;
+    const [session, snapshot] = await Promise.all([readSession(), getActiveSnapshot()]);
+    const outcome = session.journey.outcomes[moment];
+    if (!outcome) {
+      return {
+        error: `No stored outcome for the ${moment} moment. Call evaluate_moment first; do not describe any figure or say whether it is permitted until you have.`,
+      };
+    }
+    const definition = momentById(moment)!;
+    return {
+      ...momentForModel(outcome),
+      question: definition.question,
+      policy: {
+        snapshotId: outcome.snapshotId,
+        sourceHash: outcome.sourceHash,
+        label: snapshot.label,
+        description: snapshot.description,
+        stillActive: outcome.snapshotId === snapshot.id,
+      },
+      provenance: {
+        factsRevision: outcome.factsRevision,
+        effective: outcome.effective,
+        specEffectiveFrom: outcome.specEffectiveFrom,
+      },
+      // Stale means the world moved after the run, so the figures below are a
+      // record of what the policy said, not what it says.
+      stillCurrent:
+        outcome.snapshotId === snapshot.id &&
+        outcome.sourceHash === snapshot.sourceHash &&
+        outcome.factsRevision === session.journey.facts.revision,
     };
   },
 };

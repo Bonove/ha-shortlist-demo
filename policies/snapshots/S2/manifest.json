@@ -13,10 +13,11 @@
   "publication": {
     "repository": "@tristan-van-doorn/ha-shortlist-demo",
     "repositoryUrl": "https://lemmabase.com/@tristan-van-doorn/ha-shortlist-demo",
-    "spec": "shortlist_policy",
+    "specs": [
+      "shortlist_policy"
+    ],
     "retrievedAt": "2026-09-21T09:32:02.781Z",
     "message": "S2: deposit charged up front capped at one month's rent for new offers",
-    "specEffectiveFrom": "2026-01-01",
     "revision": "01a0c34e-bceb-7e8e-b8f8-fd2a30262520"
   },
   "capturedAt": "2026-09-21T09:32:02.781Z"

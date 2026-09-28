@@ -13,10 +13,11 @@
   "publication": {
     "repository": "@tristan-van-doorn/ha-shortlist-demo",
     "repositoryUrl": "https://lemmabase.com/@tristan-van-doorn/ha-shortlist-demo",
-    "spec": "shortlist_policy",
+    "specs": [
+      "shortlist_policy"
+    ],
     "retrievedAt": "2026-09-21T09:32:21.174Z",
     "message": "S3: approved exception lets the Park Apartment accept a five month stay",
-    "specEffectiveFrom": "2026-01-01",
     "revision": "01a0c34f-095e-7516-a8c5-ef5c39d4eaa4"
   },
   "capturedAt": "2026-09-21T09:32:21.175Z"

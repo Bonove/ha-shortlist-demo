@@ -15,7 +15,7 @@ import type {
   TenantProfile,
 } from '@/lib/contracts';
 import { CHECK_LABELS, SPEC_NAME } from '@/lib/contracts';
-import { type LemmaEvaluation, evaluateListing } from '@/lib/lemma/engine';
+import { type LemmaEvaluation, runSpec } from '@/lib/lemma/engine';
 
 /** Engine inputs for one listing/tenant pair. */
 export function listingInput(tenant: TenantProfile, listing: Listing): Record<string, unknown> {
@@ -35,8 +35,17 @@ export function listingInput(tenant: TenantProfile, listing: Listing): Record<st
   return data;
 }
 
-const euro = (n: number | null) =>
-  n === null ? 'unknown' : `€${n.toLocaleString('en-GB', { maximumFractionDigits: n % 1 === 0 ? 0 : 2 })}`;
+/**
+ * Money as a person writes it. Whole amounts lose the cents; anything with a
+ * fraction keeps both digits, so a cap of 1145.10 does not read as 1145.1.
+ */
+export const formatEuro = (n: number | null, unknown = 'unknown'): string =>
+  n === null
+    ? unknown
+    : `€${n.toLocaleString('en-GB', {
+        minimumFractionDigits: n % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: n % 1 === 0 ? 0 : 2,
+      })}`;
 
 function statusOf(evaluation: LemmaEvaluation): FitStatus {
   const fit = evaluation.results.offer_fits;
@@ -65,19 +74,16 @@ const INPUT_NAMES: Record<string, string> = {
   listing_minimum_stay: 'its minimum stay',
 };
 
-const eur = (n: number | null) =>
-  n === null ? 'unknown' : `€${n.toLocaleString('en-GB', { maximumFractionDigits: n % 1 === 0 ? 0 : 2 })}`;
-
 /** Plain language, assembled only from values the engine returned. */
 export function summarise(tenant: TenantProfile, listing: Listing, a: Assessment): string {
   const { costs } = a;
   const money =
     costs.initialPayment === null
       ? ''
-      : ` Up front: ${eur(costs.monthlyRent)} first month + ${eur(costs.effectiveDeposit)} deposit +` +
-        ` ${eur(costs.bookingFee)} booking fee = ${eur(costs.initialPayment)}, against a` +
-        ` ${eur(tenant.maxInitialPayment)} limit.`;
-  const head = `${listing.name} (${listing.reference}) in ${listing.neighbourhood}, ${eur(costs.monthlyRent)} a month.`;
+      : ` Up front: ${formatEuro(costs.monthlyRent)} first month + ${formatEuro(costs.effectiveDeposit)} deposit +` +
+        ` ${formatEuro(costs.bookingFee)} booking fee = ${formatEuro(costs.initialPayment)}, against a` +
+        ` ${formatEuro(tenant.maxInitialPayment)} limit.`;
+  const head = `${listing.name} (${listing.reference}) in ${listing.neighbourhood}, ${formatEuro(costs.monthlyRent)} a month.`;
 
   if (a.status === 'needs-information') {
     const what = a.missingInputs.map((i) => INPUT_NAMES[i] ?? i.replace(/_/g, ' ')).join(' and ');
@@ -89,8 +95,8 @@ export function summarise(tenant: TenantProfile, listing: Listing, a: Assessment
   }
   if (a.status === 'fits') {
     return (
-      `${head} It fits: the rent is within ${eur(tenant.maxMonthlyRent)} a month, the up-front cost is within ` +
-      `${eur(tenant.maxInitialPayment)}, and ${tenant.intendedStayMonths} months meets the ` +
+      `${head} It fits: the rent is within ${formatEuro(tenant.maxMonthlyRent)} a month, the up-front cost is within ` +
+      `${formatEuro(tenant.maxInitialPayment)}, and ${tenant.intendedStayMonths} months meets the ` +
       `${costs.effectiveMinimumStayMonths ?? listing.minimumStayMonths}-month minimum.${money}`
     );
   }
@@ -166,7 +172,7 @@ export function assessListing(args: {
   effective?: string;
   explain?: boolean;
 }): Assessment {
-  const evaluation = evaluateListing(args.snapshot.files, listingInput(args.tenant, args.listing), {
+  const evaluation = runSpec(args.snapshot.files, listingInput(args.tenant, args.listing), {
     spec: SPEC_NAME,
     effective: args.effective,
     explain: args.explain ?? true,

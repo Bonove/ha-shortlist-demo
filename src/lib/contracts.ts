@@ -39,14 +39,19 @@ export interface PublicationRecord {
   repository: string;
   /** Web URL for "Open in LemmaBase". */
   repositoryUrl: string;
-  /** Spec name inside the repository. */
-  spec: string;
+  /**
+   * Every spec name the retrieved bundle contains, in published order.
+   *
+   * A bundle holds several: the journey runs four specs out of one publication.
+   * The dated versions inside them are not recorded here — each spec has its
+   * own, and which one applied is a property of an evaluation, not of the
+   * retrieval. The engine reports that per run as `specEffectiveFrom`.
+   */
+  specs: string[];
   /** ISO timestamp at which this source was retrieved from LemmaBase. */
   retrievedAt: string;
   /** Publication message passed to LemmaBase, when known. */
   message?: string;
-  /** Temporal effective date declared in the spec header (not a revision id). */
-  specEffectiveFrom?: string;
   /**
    * Any revision/version identifier the service exposed. Undefined means the
    * service does not expose one — do not invent it.
@@ -278,6 +283,8 @@ export interface SessionState {
   applications: DemoApplication[];
   /** Latest assessment per listing reference. */
   assessments: Record<string, Assessment>;
+  /** The journey spine: Alex's facts and the latest outcome per moment. */
+  journey: JourneyState;
   /**
    * The instant the policy is evaluated at, as an ISO date. null means now.
    * A presentation control, not a tenant requirement: it moves the clock, not
@@ -333,3 +340,123 @@ export const CHECK_LABELS: Record<string, string> = {
   meets_minimum_stay: 'Stay length meets the minimum',
   offer_fits: 'Overall fit',
 };
+
+/* ---------------------------------------------------------------- journey */
+
+/**
+ * The journey spine. One tenant, four moments, one engine.
+ *
+ * The shortlist is the warm-up and already has its own machinery above; the
+ * other three each run their own Lemma spec out of the same published bundle.
+ * They are deliberately the same shape, because the point of the demonstration
+ * is that they are the same kind of decision wearing different clothes.
+ */
+export type MomentId = 'shortlist' | 'contract' | 'renewal' | 'deposit';
+
+/** How a line renders. The engine returns a display string either way. */
+export type MomentLineKind = 'money' | 'duration' | 'ratio' | 'decision';
+
+/** One rule's outcome, as the journey view shows it. */
+export interface MomentLine {
+  /** Lemma rule name, e.g. "maximum_renewal_rent". */
+  rule: string;
+  label: string;
+  kind: MomentLineKind;
+  /** Engine display string, e.g. "1145.10 eur". null when there is no value. */
+  display: string | null;
+  /** Parsed euro amount, when the rule returned one. */
+  value: number | null;
+  /** For decision lines. null when vetoed or unbound. */
+  passed: boolean | null;
+  vetoed: boolean;
+  vetoReason?: string;
+  missingData?: string[];
+}
+
+/**
+ * One authoritative run of one moment's spec.
+ *
+ * Carries the same provenance discipline as `Assessment`: nothing here may be
+ * quoted without the snapshot, the source hash and the instant it ran at.
+ */
+export interface MomentOutcome {
+  evaluationId: string;
+  moment: MomentId;
+  /** Lemma spec name inside the published bundle. */
+  spec: string;
+  /** The headline rule — the one the moment exists to answer. */
+  decision: {
+    rule: string;
+    label: string;
+    passed: boolean | null;
+    vetoed: boolean;
+    vetoReason?: string;
+  };
+  lines: MomentLine[];
+  /** Plain language, assembled only from values the engine returned. */
+  summary: string;
+  /** Exactly what was handed to the engine. */
+  inputs: Record<string, unknown>;
+  raw: unknown;
+  explanation?: unknown;
+
+  /* provenance */
+  snapshotId: SnapshotId;
+  sourceHash: string;
+  evaluatedAt: string;
+  effective: string;
+  specEffectiveFrom?: string;
+  /** Bumped whenever the facts change, so a stale outcome is provable. */
+  factsRevision: number;
+}
+
+/** What the contract states, against what the listing advertised. */
+export interface ContractFacts {
+  advertisedMonthlyRent: number;
+  contractMonthlyRent: number;
+  contractServiceCharge: number;
+  advertisedDeposit: number;
+  contractDeposit: number;
+  contractNoticePeriodMonths: number;
+}
+
+export type ContractType = 'regulated' | 'liberalised' | 'student_housing';
+
+/** What is being offered for the next term. */
+export interface RenewalFacts {
+  currentMonthlyRent: number;
+  proposedMonthlyRent: number;
+  contractType: ContractType;
+  noticeGivenMonths: number;
+}
+
+export type ClaimCategory =
+  | 'none'
+  | 'normal_wear'
+  | 'accidental_damage'
+  | 'cleaning'
+  | 'missing_item'
+  | 'redecoration';
+
+/** What the landlord is claiming at the end of the tenancy. */
+export interface DepositFacts {
+  depositHeld: number;
+  rentArrears: number;
+  claimedAmount: number;
+  claimCategory: ClaimCategory;
+  claimEvidenced: boolean;
+}
+
+export interface JourneyFacts {
+  contract: ContractFacts;
+  renewal: RenewalFacts;
+  deposit: DepositFacts;
+  /** Bumped on every confirmed change, for outcome staleness checks. */
+  revision: number;
+}
+
+export interface JourneyState {
+  facts: JourneyFacts;
+  /** Latest outcome per moment. Absent means it has not been run yet. */
+  outcomes: Partial<Record<MomentId, MomentOutcome>>;
+}

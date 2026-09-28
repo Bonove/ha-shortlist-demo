@@ -1,0 +1,366 @@
+spec contract_check 2026-01-01
+"""
+Whether a landlord's contract may be signed as offered, checked against what
+the listing advertised and the platform's own limit on a deposit.
+Fictional demonstration policy for the HousingAnywhere journey prototype.
+Illustrative only: it does not describe HousingAnywhere policy or Dutch law.
+"""
+
+uses lemma units
+
+data money: measure
+  -> unit eur: 1.00
+  -> decimals 2
+  -> minimum 0 eur
+
+data advertised_monthly_rent: money
+  -> help "What monthly rent did the listing advertise?"
+
+data contract_monthly_rent: money
+  -> help "What monthly rent does the contract state?"
+
+data contract_service_charge: money
+  -> help "What recurring service charge does the contract add on top of the rent?"
+  -> suggest 0 eur
+
+data advertised_deposit: money
+  -> help "What deposit did the listing advertise?"
+
+data contract_deposit: money
+  -> help "What deposit does the contract require?"
+
+data contract_notice_period: units.calendar
+  -> help "How much notice does the contract require before the tenant may leave?"
+
+
+rule contract_monthly_cost:
+  contract_monthly_rent + contract_service_charge
+
+rule undisclosed_monthly_cost:
+  contract_monthly_cost - advertised_monthly_rent
+
+rule maximum_deposit:
+  2 * advertised_monthly_rent
+
+rule monthly_cost_as_advertised:
+  contract_monthly_cost <= advertised_monthly_rent
+
+rule deposit_as_advertised:
+  contract_deposit <= advertised_deposit
+
+rule deposit_within_cap:
+  contract_deposit <= maximum_deposit
+
+rule notice_period_acceptable:
+  contract_notice_period <= 1 month
+
+rule contract_may_be_signed:
+  monthly_cost_as_advertised and deposit_as_advertised
+  and deposit_within_cap
+  and notice_period_acceptable
+
+
+spec deposit_settlement 2026-01-01
+"""
+What may be withheld from a deposit at the end of a tenancy, and what must be
+returned. A deduction needs evidence from both the move-in and the move-out
+record, and normal wear is never chargeable.
+Fictional demonstration policy for the HousingAnywhere journey prototype.
+Illustrative only: it does not describe HousingAnywhere policy or Dutch law.
+"""
+
+data money: measure
+  -> unit eur: 1.00
+  -> decimals 2
+  -> minimum 0 eur
+
+data deposit_held: money
+  -> help "How much deposit is being held?"
+
+data rent_arrears: money
+  -> help "How much unpaid rent is still outstanding?"
+  -> suggest 0 eur
+
+data claimed_amount: money
+  -> help "How much is the landlord claiming for the condition of the home?"
+
+data claim_category: text
+  -> option "none"
+  -> option "normal_wear"
+  -> option "accidental_damage"
+  -> option "cleaning"
+  -> option "missing_item"
+  -> option "redecoration"
+  -> help "What kind of claim is the landlord making?"
+
+data claim_evidenced: boolean
+  -> help "Is there both move-in and move-out evidence for this claim?"
+  -> suggest false
+
+
+rule chargeable_claim:
+  veto "This kind of claim is not priced in the settlement policy"
+  unless claim_category is "none"
+    then 0 eur
+  unless claim_category is "normal_wear"
+    then 0 eur
+  unless claim_category is "accidental_damage"
+    then claimed_amount
+  unless claim_category is "cleaning"
+    then claimed_amount
+  unless claim_category is "missing_item"
+    then claimed_amount
+
+rule evidenced_claim:
+  chargeable_claim
+  unless claim_evidenced is false then 0 eur
+
+rule total_claimed:
+  rent_arrears + claimed_amount
+
+rule total_deduction:
+  rent_arrears + evidenced_claim
+
+rule deduction_payable:
+  total_deduction
+  unless total_deduction > deposit_held
+    then deposit_held
+
+rule refund_to_tenant:
+  deposit_held - deduction_payable
+
+rule claim_upheld_in_full:
+  deduction_payable >= total_claimed
+
+
+spec renewal_policy 2026-01-01
+"""
+Whether a renewal offer may be made, and the most that may be asked for the
+new term. In force until 2027-01-01: the increase is capped at 4.1% on a
+liberalised contract and 2.6% on a regulated one.
+Fictional demonstration policy for the HousingAnywhere journey prototype.
+Illustrative only: it does not describe HousingAnywhere policy or Dutch law.
+"""
+
+uses lemma units
+
+data money: measure
+  -> unit eur: 1.00
+  -> decimals 2
+  -> minimum 0 eur
+
+data current_monthly_rent: money
+  -> help "What is the tenant paying now?"
+
+data proposed_monthly_rent: money
+  -> help "What monthly rent is being proposed for the new term?"
+
+data contract_type: text
+  -> option "regulated"
+  -> option "liberalised"
+  -> option "student_housing"
+  -> help "What kind of contract is this?"
+
+data notice_given: units.calendar
+  -> help "How long before the tenancy ends is the offer being made?"
+
+
+rule maximum_increase:
+  veto "This kind of contract has no renewal cap in the policy"
+  unless contract_type is "regulated"   then 2.6%
+  unless contract_type is "liberalised" then 4.1%
+
+rule maximum_renewal_rent:
+  current_monthly_rent * (100% + maximum_increase)
+
+rule offer_within_cap:
+  proposed_monthly_rent <= maximum_renewal_rent
+
+rule notice_is_timely:
+  notice_given >= 2 month
+
+rule renewal_offer_permitted:
+  offer_within_cap and notice_is_timely
+
+
+spec renewal_policy 2027-01-01
+"""
+In force from 2027-01-01: the increase is capped at 2.8% on a liberalised
+contract and 1.4% on a regulated one. Everything else carries over unchanged.
+Fictional demonstration policy for the HousingAnywhere journey prototype.
+Illustrative only: it does not describe HousingAnywhere policy or Dutch law.
+"""
+
+uses lemma units
+
+data money: measure
+  -> unit eur: 1.00
+  -> decimals 2
+  -> minimum 0 eur
+
+data current_monthly_rent: money
+  -> help "What is the tenant paying now?"
+
+data proposed_monthly_rent: money
+  -> help "What monthly rent is being proposed for the new term?"
+
+data contract_type: text
+  -> option "regulated"
+  -> option "liberalised"
+  -> option "student_housing"
+  -> help "What kind of contract is this?"
+
+data notice_given: units.calendar
+  -> help "How long before the tenancy ends is the offer being made?"
+
+
+rule maximum_increase:
+  veto "This kind of contract has no renewal cap in the policy"
+  unless contract_type is "regulated"   then 1.4%
+  unless contract_type is "liberalised" then 2.8%
+
+rule maximum_renewal_rent:
+  current_monthly_rent * (100% + maximum_increase)
+
+rule offer_within_cap:
+  proposed_monthly_rent <= maximum_renewal_rent
+
+rule notice_is_timely:
+  notice_given >= 2 month
+
+rule renewal_offer_permitted:
+  offer_within_cap and notice_is_timely
+
+
+spec shortlist_policy 2026-01-01
+"""
+In force until 2027-01-01: booking fee 100 eur, deposit capped at one month's
+rent, and an approved exception letting the Park Apartment accept five months.
+Fictional demonstration policy for the HousingAnywhere shortlist prototype.
+Illustrative only: it does not describe HousingAnywhere policy or Dutch law.
+Initial payment = first month's rent + deposit + booking fee.
+"""
+
+uses lemma units
+
+data money: measure
+  -> unit eur: 1.00
+  -> decimals 2
+  -> minimum 0 eur
+
+data listing_reference: text
+  -> help "Which home is being assessed?"
+
+data monthly_rent: money
+  -> help "What is the monthly rent for this home?"
+
+data requested_deposit: money
+  -> help "What deposit does the advertiser ask for this home?"
+
+data listing_minimum_stay: units.calendar
+  -> help "What is the shortest stay this home accepts?"
+
+data intended_stay: units.calendar
+  -> help "How long does the tenant intend to stay?"
+
+data maximum_monthly_rent: money
+  -> help "What is the most the tenant wants to pay per month?"
+
+data maximum_initial_payment: money
+  -> help "What is the most the tenant can pay up front?"
+
+
+rule booking_fee:
+  100 eur
+
+rule effective_deposit:
+  requested_deposit
+  unless requested_deposit > monthly_rent
+    then monthly_rent
+
+rule initial_payment:
+  monthly_rent + effective_deposit + booking_fee
+
+rule effective_minimum_stay:
+  listing_minimum_stay
+  unless listing_reference is "C" then 5 month
+
+rule fits_monthly_budget:
+  monthly_rent <= maximum_monthly_rent
+
+rule fits_initial_payment_budget:
+  initial_payment <= maximum_initial_payment
+
+rule meets_minimum_stay:
+  intended_stay >= effective_minimum_stay
+
+rule offer_fits:
+  fits_monthly_budget and fits_initial_payment_budget
+  and meets_minimum_stay
+
+
+spec shortlist_policy 2027-01-01
+"""
+In force from 2027-01-01: the booking fee is abolished. The deposit cap and
+the Park Apartment exception carry over unchanged.
+Fictional demonstration policy for the HousingAnywhere shortlist prototype.
+Illustrative only: it does not describe HousingAnywhere policy or Dutch law.
+Initial payment = first month's rent + deposit + booking fee.
+"""
+
+uses lemma units
+
+data money: measure
+  -> unit eur: 1.00
+  -> decimals 2
+  -> minimum 0 eur
+
+data listing_reference: text
+  -> help "Which home is being assessed?"
+
+data monthly_rent: money
+  -> help "What is the monthly rent for this home?"
+
+data requested_deposit: money
+  -> help "What deposit does the advertiser ask for this home?"
+
+data listing_minimum_stay: units.calendar
+  -> help "What is the shortest stay this home accepts?"
+
+data intended_stay: units.calendar
+  -> help "How long does the tenant intend to stay?"
+
+data maximum_monthly_rent: money
+  -> help "What is the most the tenant wants to pay per month?"
+
+data maximum_initial_payment: money
+  -> help "What is the most the tenant can pay up front?"
+
+
+rule booking_fee:
+  0 eur
+
+rule effective_deposit:
+  requested_deposit
+  unless requested_deposit > monthly_rent
+    then monthly_rent
+
+rule initial_payment:
+  monthly_rent + effective_deposit + booking_fee
+
+rule effective_minimum_stay:
+  listing_minimum_stay
+  unless listing_reference is "C" then 5 month
+
+rule fits_monthly_budget:
+  monthly_rent <= maximum_monthly_rent
+
+rule fits_initial_payment_budget:
+  initial_payment <= maximum_initial_payment
+
+rule meets_minimum_stay:
+  intended_stay >= effective_minimum_stay
+
+rule offer_fits:
+  fits_monthly_budget and fits_initial_payment_budget
+  and meets_minimum_stay
